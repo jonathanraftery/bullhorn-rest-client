@@ -1,8 +1,28 @@
 {
+    "name": "jonathanraftery/bullhorn-rest-client",
+    "description": "Simple REST client for the Bullhorn API, including automated OAuth2 login",
+    "keywords": [
+        "bullhorn", "rest", "api"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jonathan Raftery",
+            "email": "jonathan@jonathanraftery.com"
+        }
+    ],
     "require": {
         "jonathanraftery/bullhorn-auth-client": "dev-master"
     },
     "require-dev": {
         "phpunit/phpunit": "^7"
+    },
+    "autoload": {
+        "classmap": [
+            "src/"
+        ],
+        "psr-4": {
+            "jonathanraftery\\Bullhorn\\REST\\Client\\": "src/Client.php"
+        }
     }
 }
