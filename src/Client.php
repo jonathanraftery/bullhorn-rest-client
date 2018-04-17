@@ -4,6 +4,7 @@ namespace jonathanraftery\Bullhorn\REST;
 use jonathanraftery\Bullhorn\REST\Authentication\Client as AuthClient;
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\Psr7\Request as HttpRequest;
+use GuzzleHttp\Psr7\Uri;
 
 class Client
 {
@@ -22,9 +23,9 @@ class Client
         ]);
     }
 
-    public function get($url, $parameters)
+    public function get($url, $parameters, $headers = [])
     {
-        $request = $this->buildRequest($url, $parameters);
+        $request = $this->buildRequest($url, $parameters, 'GET', $headers);
         $response = $this->httpClient->send($request);
         return json_decode($response->getBody()->getContents());
     }
@@ -36,16 +37,13 @@ class Client
         ];
     }
 
-    private function buildRequest($url, $parameters, $method = 'GET', $headers = [])
+    private function buildRequest($url, $parameters, $method, $headers)
     {
-        $defaultHeaders = [
-            'BhRestToken' => $this->session->BhRestToken
-        ];
-        $headers = array_merge($defaultHeaders, $headers);
+        $uri = new Uri($url);
         return new HttpRequest(
             $method,
-            $url,
-            $headers
+            $uri->withQuery(http_build_query($parameters)),
+            array_merge($headers, $this->getDefaultHeaders())
         );
     }
 }
