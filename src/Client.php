@@ -66,8 +66,8 @@ class Client
     public function request(
         $method,
         $url,
-        $parameters,
-        $headers = []
+        $parameters = [],
+        $headers = [] 
     ) {
         $request = $this->buildRequest(
             $method,
@@ -75,6 +75,11 @@ class Client
             $parameters,
             $headers
         );
+        return $this->getResponse($request);
+    }
+
+    public function getResponse($request)
+    {
         $response = $this->httpClient->send($request);
         $responseBody = $response->getBody()->getContents();
         return json_decode($responseBody);
