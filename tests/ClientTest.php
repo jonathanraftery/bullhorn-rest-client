@@ -99,6 +99,44 @@ final class ClientTest extends TestCase
         $this->assertTrue(isset($response->searchFields));
     }
 
+    /**
+     * @dataProvider validCredentialsProvider
+     * @group new
+     */
+    function testGetsResponseForValidJobOrderIdSearch(
+        $clientId,
+        $clientSecret,
+        $username,
+        $password
+    ) {
+        $client = new Client(
+            $clientId, $clientSecret, $username, $password
+        );
+        $response = $client->getJobOrdersWhere(
+            'isOpen:1 AND isPublic:1 AND isDeleted:0' 
+        );
+        $this->assertTrue(isset($response->total));
+    }
+
+    /**
+     * @dataProvider validCredentialsProvider
+     * @group new
+     */
+    function testGetsAllJobIdsForValidJobOrderIdSearch(
+        $clientId,
+        $clientSecret,
+        $username,
+        $password
+    ) {
+        $client = new Client(
+            $clientId, $clientSecret, $username, $password
+        );
+        $response = $client->getAllJobOrderIdsWhere(
+            'isOpen:1 AND isPublic:1 AND isDeleted:0' 
+        );
+        $this->assertEquals($response->total, count($response->data));
+    }
+
     function validCredentialsProvider()
     {
         $credentialsFileName = __DIR__.'/data/client-credentials.json';
