@@ -83,6 +83,22 @@ final class ClientTest extends TestCase
         );
     }
 
+    /**
+     * @dataProvider validCredentialsProvider
+     */
+    function testGetsResponseForValidRequest(
+        $clientId,
+        $clientSecret,
+        $username,
+        $password
+    ) {
+        $client = new Client(
+            $clientId, $clientSecret, $username, $password
+        );
+        $response = $client->get('search/JobOrder', []);
+        $this->assertTrue(isset($response->searchFields));
+    }
+
     function validCredentialsProvider()
     {
         $credentialsFileName = __DIR__.'/data/client-credentials.json';
