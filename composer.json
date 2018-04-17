@@ -1,0 +1,8 @@
+{
+    "require": {
+        "jonathanraftery/bullhorn-auth-client": "dev-master"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^7"
+    }
+}
