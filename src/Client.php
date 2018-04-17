@@ -12,10 +12,17 @@ class Client
     private $session;
     private $httpClient;
 
-    public function __construct($clientId, $clientSecret, $username, $password)
-    {
+    public function __construct(
+        $clientId,
+        $clientSecret,
+        $username,
+        $password
+    ) {
         $this->authClient = new AuthClient(
-            $clientId, $clientSecret, $username, $password
+            $clientId,
+            $clientSecret,
+            $username,
+            $password
         );
         $this->session = $this->authClient->createSession();
         $this->httpClient = new HttpClient([
@@ -23,11 +30,54 @@ class Client
         ]);
     }
 
-    public function get($url, $parameters, $headers = [])
+    public function getJobOrdersWhere($conditions, $fields = ['id'])
     {
-        $request = $this->buildRequest($url, $parameters, 'GET', $headers);
+        $jobOrders = $this->get(
+            'search/JobOrder',
+            [
+                'query' => $conditions,
+                'fields' => implode(',', $fields)
+            ]
+        );
+        return $jobOrders;
+    }
+
+    public function getAllJobOrderIdsWhere($conditions)
+    {
+        return $this->get(
+            'search/JobOrder',
+            [ 'query' => $conditions ]
+        );
+    }
+
+    public function get(
+        $url,
+        $parameters,
+        $headers = []
+    ) {
+        return $this->request(
+            'GET',
+            $url,
+            $parameters,
+            $headers
+        );
+    }
+
+    public function request(
+        $method,
+        $url,
+        $parameters,
+        $headers = []
+    ) {
+        $request = $this->buildRequest(
+            $method,
+            $url,
+            $parameters,
+            $headers
+        );
         $response = $this->httpClient->send($request);
-        return json_decode($response->getBody()->getContents());
+        $responseBody = $response->getBody()->getContents();
+        return json_decode($responseBody);
     }
 
     private function getDefaultHeaders()
@@ -37,13 +87,24 @@ class Client
         ];
     }
 
-    private function buildRequest($url, $parameters, $method, $headers)
-    {
+    private function buildRequest(
+        $method,
+        $url,
+        $parameters,
+        $headers
+    ) {
         $uri = new Uri($url);
+        $query = http_build_query($parameters);
+        $fullUri = $uri ->withQuery($query);
+        $fullHeaders = array_merge(
+            $headers,
+            $this->getDefaultHeaders()
+        );
+
         return new HttpRequest(
             $method,
-            $uri->withQuery(http_build_query($parameters)),
-            array_merge($headers, $this->getDefaultHeaders())
+            $fullUri,
+            $fullHeaders
         );
     }
 }
