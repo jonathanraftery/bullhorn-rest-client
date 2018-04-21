@@ -1,23 +1,23 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
-use jonathanraftery\Bullhorn\REST\Client as Client;
+use jonathanraftery\Bullhorn\Rest\Client;
+use jonathanraftery\Bullhorn\Rest\Authentication\AuthorizationException;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 
 final class ClientTest extends TestCase
 {
     /**
-     * @dataProvider validCredentialsProvider
+     * @dataProvider credentialsProvider
      */
-    function testCanBeConstructedFromValidCredentials(
-        $clientId,
-        $clientSecret,
-        $username,
-        $password
-    ) {
+    function testCanBeConstructedFromValidCredentials($credentials)
+    {
         try {
             $client = new Client(
-                $clientId, $clientSecret, $username, $password
+                $credentials['clientId'],
+                $credentials['clientSecret'],
+                $credentials['username'],
+                $credentials['password']
             );
         } catch (Exception $e) {
             $this->fail();
@@ -27,90 +27,83 @@ final class ClientTest extends TestCase
     }
 
     /**
-     * @dataProvider invalidClientIdCredentialsProvider
+     * @dataProvider credentialsProvider
      */
-    function testThrowsExceptionOnInvalidClientId(
-        $clientId,
-        $clientSecret,
-        $username,
-        $password
-    ) {
-        $this->expectException(\InvalidArgumentException::class);
+    function testThrowsExceptionOnInvalidClientId($credentials)
+    {
+        $this->expectException(AuthorizationException::class);
         $client = new Client(
-            $clientId, $clientSecret, $username, $password
+            'testing_invalid_client_id',
+            $credentials['clientSecret'],
+            $credentials['username'],
+            $credentials['password']
         );
     }
     /**
-     * @dataProvider invalidClientSecretCredentialsProvider
+     * @dataProvider credentialsProvider
      */
-    function testThrowsExceptionOnInvalidClientSecret(
-        $clientId,
-        $clientSecret,
-        $username,
-        $password
-    ) {
-        $this->expectException(IdentityProviderException::class);
+    function testThrowsExceptionOnInvalidClientSecret($credentials)
+    {
+        $this->expectException(AuthorizationException::class);
         $client = new Client(
-            $clientId, $clientSecret, $username, $password
+            $credentials['clientId'],
+            'testing_invalid_client_secret',
+            $credentials['username'],
+            $credentials['password']
         );
     }
     /**
-     * @dataProvider invalidUsernameCredentialsProvider
+     * @dataProvider credentialsProvider
      */
-    function testThrowsExceptionOnInvalidUsername(
-        $clientId,
-        $clientSecret,
-        $username,
-        $password
-    ) {
-        $this->expectException(\InvalidArgumentException::class);
+    function testThrowsExceptionOnInvalidUsername($credentials)
+    {
+        $this->expectException(AuthorizationException::class);
         $client = new Client(
-            $clientId, $clientSecret, $username, $password
+            $credentials['clientId'],
+            $credentials['clientSecret'],
+            'testing_invalid_username',
+            $credentials['password']
         );
     }
     /**
-     * @dataProvider invalidPasswordCredentialsProvider
+     * @dataProvider credentialsProvider
      */
-    function testThrowsExceptionOnInvalidPassword(
-        $clientId,
-        $clientSecret,
-        $username,
-        $password
-    ) {
-        $this->expectException(\InvalidArgumentException::class);
+    function testThrowsExceptionOnInvalidPassword($credentials)
+    {
+        $this->expectException(AuthorizationException::class);
         $client = new Client(
-            $clientId, $clientSecret, $username, $password
+            $credentials['clientId'],
+            $credentials['clientSecret'],
+            $credentials['username'],
+            'testing_invalid_password'
         );
     }
 
     /**
-     * @dataProvider validCredentialsProvider
+     * @dataProvider credentialsProvider
      */
-    function testGetsResponseForValidRequest(
-        $clientId,
-        $clientSecret,
-        $username,
-        $password
-    ) {
+    function testGetsResponseForValidRequest($credentials)
+    {
         $client = new Client(
-            $clientId, $clientSecret, $username, $password
+            $credentials['clientId'],
+            $credentials['clientSecret'],
+            $credentials['username'],
+            $credentials['password']
         );
         $response = $client->get('search/JobOrder', []);
         $this->assertTrue(isset($response->searchFields));
     }
 
     /**
-     * @dataProvider validCredentialsProvider
-     * @group new
+     * @dataProvider credentialsProvider
      */
-    function testGetsResponseForValidJobOrderIdSearch(
-        $clientId,
-        $clientSecret,
-        $username,
-        $password
-    ) {
+    function testGetsResponseForValidJobOrderIdSearch($credentials)
+    {
         $client = new Client(
-            $clientId, $clientSecret, $username, $password
+            $credentials['clientId'],
+            $credentials['clientSecret'],
+            $credentials['username'],
+            $credentials['password']
         );
         $response = $client->getJobOrdersWhere(
             'isOpen:1 AND isPublic:1 AND isDeleted:0' 
@@ -119,17 +112,15 @@ final class ClientTest extends TestCase
     }
 
     /**
-     * @dataProvider validCredentialsProvider
-     * @group new
+     * @dataProvider credentialsProvider
      */
-    function testGetsAllJobIdsForValidJobOrderIdSearch(
-        $clientId,
-        $clientSecret,
-        $username,
-        $password
-    ) {
+    function testGetsAllJobIdsForValidJobOrderIdSearch($credentials)
+    {
         $client = new Client(
-            $clientId, $clientSecret, $username, $password
+            $credentials['clientId'],
+            $credentials['clientSecret'],
+            $credentials['username'],
+            $credentials['password']
         );
         $response = $client->getAllJobOrderIdsWhere(
             'isOpen:1 AND isPublic:1 AND isDeleted:0' 
@@ -137,80 +128,14 @@ final class ClientTest extends TestCase
         $this->assertEquals($response->total, count($response->data));
     }
 
-    function validCredentialsProvider()
+    function credentialsProvider()
     {
         $credentialsFileName = __DIR__.'/data/client-credentials.json';
         $credentialsFile = fopen($credentialsFileName, 'r');
         $credentialsJson = fread($credentialsFile, filesize($credentialsFileName));
-        $credentials = json_decode($credentialsJson);
+        $credentials = json_decode($credentialsJson, true);
         return [
-            'valid credentials' => [
-                $credentials->clientId,
-                $credentials->clientSecret,
-                $credentials->username,
-                $credentials->password
-            ]
-        ];
-    }
-
-    function invalidClientIdCredentialsProvider()
-    {
-        $credentialsFileName = __DIR__.'/data/client-credentials.json';
-        $credentialsFile = fopen($credentialsFileName, 'r');
-        $credentialsJson = fread($credentialsFile, filesize($credentialsFileName));
-        $credentials = json_decode($credentialsJson);
-        return [
-            'invalid credentials (client ID)' => [
-                'testing_invalid_client_id',
-                $credentials->clientSecret,
-                $credentials->username,
-                $credentials->password
-            ]
-        ];
-    }
-    function invalidClientSecretCredentialsProvider()
-    {
-        $credentialsFileName = __DIR__.'/data/client-credentials.json';
-        $credentialsFile = fopen($credentialsFileName, 'r');
-        $credentialsJson = fread($credentialsFile, filesize($credentialsFileName));
-        $credentials = json_decode($credentialsJson);
-        return [
-            'invalid credentials (client ID)' => [
-                $credentials->clientId,
-                'testing_invalid_client_secret',
-                $credentials->username,
-                $credentials->password
-            ]
-        ];
-    }
-    function invalidUsernameCredentialsProvider()
-    {
-        $credentialsFileName = __DIR__.'/data/client-credentials.json';
-        $credentialsFile = fopen($credentialsFileName, 'r');
-        $credentialsJson = fread($credentialsFile, filesize($credentialsFileName));
-        $credentials = json_decode($credentialsJson);
-        return [
-            'invalid credentials (username)' => [
-                $credentials->clientId,
-                $credentials->clientSecret,
-                'testing_invalid_username',
-                $credentials->password
-            ]
-        ];
-    }
-    function invalidPasswordCredentialsProvider()
-    {
-        $credentialsFileName = __DIR__.'/data/client-credentials.json';
-        $credentialsFile = fopen($credentialsFileName, 'r');
-        $credentialsJson = fread($credentialsFile, filesize($credentialsFileName));
-        $credentials = json_decode($credentialsJson);
-        return [
-            'invalid credentials (password)' => [
-                $credentials->clientId,
-                $credentials->clientSecret,
-                $credentials->username,
-                'testing_invalid_password'
-            ]
+            'valid credentials' => [$credentials]
         ];
     }
 }
