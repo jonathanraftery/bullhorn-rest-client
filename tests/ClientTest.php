@@ -7,23 +7,22 @@ use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 
 final class ClientTest extends TestCase
 {
-    /**
-     * @dataProvider credentialsProvider
-     */
-    function testCanBeConstructedFromValidCredentials($credentials)
+    function testCanBeConstructedFromValidCredentials()
     {
-        try {
-            $client = new Client(
-                $credentials['clientId'],
-                $credentials['clientSecret'],
-                $credentials['username'],
-                $credentials['password']
-            );
-        } catch (Exception $e) {
-            $this->fail();
-        }
+        $credentialsFileName = __DIR__.'/data/client-credentials.json';
+        $credentialsFile = fopen($credentialsFileName, 'r');
+        $credentialsJson = fread($credentialsFile, filesize($credentialsFileName));
+        $credentials = json_decode($credentialsJson, true);
 
-        $this->assertTrue(TRUE);
+        $client = new Client(
+            $credentials['clientId'],
+            $credentials['clientSecret'],
+            $credentials['username'],
+            $credentials['password']
+        );
+
+        $this->assertTrue($client->sessionIsValid());
+        return $client;
     }
 
     /**
@@ -128,14 +127,29 @@ final class ClientTest extends TestCase
         $this->assertEquals($response->total, count($response->data));
     }
 
+    /**
+     * @depends testCanBeConstructedFromValidCredentials
+     */
+    function testBuildsPutBodyCorrectly($client)
+    {
+        $parameters = [
+            'query' => 'isOpen:1 AND isPublic:1 AND isDeleted:0'
+        ];
+        $request = $client->buildRequest(
+            'PUT',
+            'search/JobOrder',
+            $parameters
+        );
+        $expectedBody = http_build_query($parameters);
+        $this->assertEquals($request->getBody()->getContents(), $expectedBody);
+    }
+
     function credentialsProvider()
     {
         $credentialsFileName = __DIR__.'/data/client-credentials.json';
         $credentialsFile = fopen($credentialsFileName, 'r');
         $credentialsJson = fread($credentialsFile, filesize($credentialsFileName));
         $credentials = json_decode($credentialsJson, true);
-        return [
-            'valid credentials' => [$credentials]
-        ];
+        return [[$credentials]];
     }
 }
