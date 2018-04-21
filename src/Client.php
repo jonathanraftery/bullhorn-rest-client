@@ -1,7 +1,7 @@
 <?php
 
-namespace jonathanraftery\Bullhorn\REST;
-use jonathanraftery\Bullhorn\REST\Authentication\Client as AuthClient;
+namespace jonathanraftery\Bullhorn\Rest;
+use jonathanraftery\Bullhorn\Rest\Authentication\Client as AuthClient;
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\Psr7\Request as HttpRequest;
 use GuzzleHttp\Psr7\Uri;
@@ -9,7 +9,6 @@ use GuzzleHttp\Psr7\Uri;
 class Client
 {
     private $authClient;
-    private $session;
     private $httpClient;
 
     public function __construct(
@@ -20,13 +19,14 @@ class Client
     ) {
         $this->authClient = new AuthClient(
             $clientId,
-            $clientSecret,
+            $clientSecret
+        );
+        $this->authClient->initiateSession(
             $username,
             $password
         );
-        $this->session = $this->authClient->createSession();
         $this->httpClient = new HttpClient([
-            'base_uri' => $this->session->restUrl
+            'base_uri' => $this->authClient->getRestUrl()
         ]);
     }
 
@@ -52,7 +52,7 @@ class Client
 
     public function get(
         $url,
-        $parameters,
+        $parameters = [],
         $headers = []
     ) {
         return $this->request(
@@ -75,7 +75,29 @@ class Client
             $parameters,
             $headers
         );
+        print_r($request);
         return $this->getResponse($request);
+    }
+
+    private function buildRequest(
+        $method,
+        $url,
+        $parameters,
+        $headers
+    ) {
+        $uri = new Uri($url);
+        $query = http_build_query($parameters);
+        $fullUri = $uri->withQuery($query);
+        $fullHeaders = array_merge(
+            $headers,
+            $this->getDefaultHeaders()
+        );
+
+        return new HttpRequest(
+            $method,
+            $fullUri,
+            $fullHeaders
+        );
     }
 
     public function getResponse($request)
@@ -88,28 +110,7 @@ class Client
     private function getDefaultHeaders()
     {
         return [
-            'BhRestToken' => $this->session->BhRestToken
+            'BhRestToken' => $this->authClient->getRestToken()
         ];
-    }
-
-    private function buildRequest(
-        $method,
-        $url,
-        $parameters,
-        $headers
-    ) {
-        $uri = new Uri($url);
-        $query = http_build_query($parameters);
-        $fullUri = $uri ->withQuery($query);
-        $fullHeaders = array_merge(
-            $headers,
-            $this->getDefaultHeaders()
-        );
-
-        return new HttpRequest(
-            $method,
-            $fullUri,
-            $fullHeaders
-        );
     }
 }
