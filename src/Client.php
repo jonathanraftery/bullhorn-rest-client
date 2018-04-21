@@ -30,6 +30,9 @@ class Client
         ]);
     }
 
+    public function sessionIsValid()
+    { return $this->authClient->sessionIsValid(); }
+
     public function getJobOrdersWhere($conditions, $fields = ['id'])
     {
         $jobOrders = $this->get(
@@ -50,13 +53,20 @@ class Client
         );
     }
 
-    public function get(
-        $url,
-        $parameters = [],
-        $headers = []
-    ) {
+    public function get($url, $parameters = [], $headers = [])
+    {
         return $this->request(
             'GET',
+            $url,
+            $parameters,
+            $headers
+        );
+    }
+
+    public function post($url, $parameters = [], $headers = [])
+    {
+        return $this->request(
+            'POST',
             $url,
             $parameters,
             $headers
@@ -78,32 +88,42 @@ class Client
         return $this->getResponse($request);
     }
 
-    private function buildRequest(
-        $method,
-        $url,
-        $parameters,
-        $headers
-    ) {
-        $uri = new Uri($url);
-        $query = http_build_query($parameters);
-        $fullUri = $uri->withQuery($query);
-        $fullHeaders = array_merge(
-            $headers,
-            $this->getDefaultHeaders()
-        );
-
-        return new HttpRequest(
-            $method,
-            $fullUri,
-            $fullHeaders
-        );
-    }
-
     public function getResponse($request)
     {
         $response = $this->httpClient->send($request);
         $responseBody = $response->getBody()->getContents();
         return json_decode($responseBody);
+    }
+
+    public function buildRequest(
+        $method,
+        $url,
+        $parameters = [],
+        $headers = []
+    ) {
+        $fullHeaders = array_merge(
+            $headers,
+            $this->getDefaultHeaders()
+        );
+
+        if ($method === 'GET') {
+            $query = http_build_query($parameters);
+            $uri = new Uri($url);
+            $fullUri = $uri->withQuery($query);
+
+            return new HttpRequest(
+                $method,
+                $fullUri,
+                $fullHeaders
+            );
+        } else {
+            return new HttpRequest(
+                $method,
+                $url,
+                $fullHeaders,
+                http_build_query($parameters)
+            );
+        }
     }
 
     private function getDefaultHeaders()
