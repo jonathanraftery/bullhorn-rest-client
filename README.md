@@ -9,7 +9,7 @@ $ composer require jonathanraftery/bullhorn-rest-client
 
 ## Usage
 ```php
-use jonathanraftery\Bullhorn\REST\Client as BullhornClient;
+use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
 
 $client = new BullhornClient(
     'client_id',
