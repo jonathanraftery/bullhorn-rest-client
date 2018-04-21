@@ -75,7 +75,6 @@ class Client
             $parameters,
             $headers
         );
-        print_r($request);
         return $this->getResponse($request);
     }
 
