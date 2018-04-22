@@ -3,11 +3,13 @@
 namespace jonathanraftery\Bullhorn\Rest;
 use jonathanraftery\Bullhorn\Rest\Authentication\Client as AuthClient;
 use GuzzleHttp\Client as HttpClient;
+use GuzzleHttp\Promise;
 use GuzzleHttp\Psr7\Request as HttpRequest;
 use GuzzleHttp\Psr7\Uri;
 
 class Client
 {
+    const MAX_ENTITY_REQUEST_COUNT = 100;
     private $authClient;
     private $httpClient;
 
@@ -35,22 +37,56 @@ class Client
 
     public function getJobOrdersWhere($conditions, $fields = ['id'])
     {
-        $jobOrders = $this->get(
-            'search/JobOrder',
-            [
-                'query' => $conditions,
-                'fields' => implode(',', $fields)
-            ]
-        );
+        $ids = $this->getAllJobOrderIdsWhere($conditions)->data;
+        $jobOrders = $this->getJobOrdersById($ids, $fields);
         return $jobOrders;
     }
 
     public function getAllJobOrderIdsWhere($conditions)
     {
-        return $this->get(
+        $response = $this->get(
             'search/JobOrder',
-            [ 'query' => $conditions ]
+            ['query' => $conditions]
         );
+        return $response;
+    }
+
+    public function getJobOrdersById(array $ids, array $fields = ['id'])
+    {
+        $jobsPerRequest = self::MAX_ENTITY_REQUEST_COUNT;
+        $chunkedIds = array_chunk($ids, $jobsPerRequest);
+        $requests = [];
+
+        foreach ($chunkedIds as $ids) {
+            $conditions = '';
+            foreach ($ids as $id)
+                $conditions .= "id:$id OR ";
+            $conditions = substr($conditions, 0, -4);
+
+            $requests[] = $this->buildRequest(
+                'GET',
+                'search/JobOrder',
+                [
+                    'query' => $conditions,
+                    'count' => $jobsPerRequest,
+                    'fields' => implode(',', $fields)
+                ]
+            );
+        }
+
+        $promises = [];
+        foreach ($requests as $request)
+            $promises[] = $this->httpClient->sendAsync($request);
+        $responses = Promise\unwrap($promises);
+
+        $jobOrders = [];
+        foreach ($responses as $response) {
+            $data = json_decode($response->getBody()->getContents())->data;
+            foreach ($data as $jobOrder)
+                $jobOrders[] = $jobOrder;
+        }
+
+        return $jobOrders;
     }
 
     public function get($url, $parameters = [], $headers = [])
