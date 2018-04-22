@@ -38,6 +38,7 @@ final class ClientTest extends TestCase
             $credentials['password']
         );
     }
+
     /**
      * @dataProvider credentialsProvider
      */
@@ -94,37 +95,49 @@ final class ClientTest extends TestCase
     }
 
     /**
-     * @dataProvider credentialsProvider
+     * @depends testCanBeConstructedFromValidCredentials
      */
-    function testGetsResponseForValidJobOrderIdSearch($credentials)
+    function testGetsAllJobIdsForValidJobOrderIdSearch($client)
     {
-        $client = new Client(
-            $credentials['clientId'],
-            $credentials['clientSecret'],
-            $credentials['username'],
-            $credentials['password']
-        );
-        $response = $client->getJobOrdersWhere(
-            'isOpen:1 AND isPublic:1 AND isDeleted:0' 
-        );
-        $this->assertTrue(isset($response->total));
-    }
-
-    /**
-     * @dataProvider credentialsProvider
-     */
-    function testGetsAllJobIdsForValidJobOrderIdSearch($credentials)
-    {
-        $client = new Client(
-            $credentials['clientId'],
-            $credentials['clientSecret'],
-            $credentials['username'],
-            $credentials['password']
-        );
         $response = $client->getAllJobOrderIdsWhere(
             'isOpen:1 AND isPublic:1 AND isDeleted:0' 
         );
         $this->assertEquals($response->total, count($response->data));
+    }
+
+    /**
+     * @depends testCanBeConstructedFromValidCredentials
+     */
+    function testGetsAllJobsWhenMoreThanMaxReturned($client)
+    {
+        $response = $client->get(
+            'search/JobOrder',
+            ['query' => 'isOpen:1']
+        );
+        $jobOrders = $client->getJobOrdersWhere(
+            'isOpen:1',
+            ['id', 'title', 'isOpen']
+        );
+        $this->assertEquals(count($jobOrders), $response->total);
+        return $jobOrders;
+    }
+
+    /**
+     * @depends testGetsAllJobsWhenMoreThanMaxReturned
+     */
+    function testNoDuplicateJobsReturnedForJobQuery($jobOrders)
+    {
+        $seen = [];
+        $duplicateFound = false;
+        foreach ($jobOrders as $jobOrder) {
+            if (in_array($jobOrder->id, $seen)) {
+                $duplicateFound = true;
+                break;
+            }
+            else
+                $seen[] = $jobOrder->id;
+        }
+        $this->assertFalse($duplicateFound);
     }
 
     /**
