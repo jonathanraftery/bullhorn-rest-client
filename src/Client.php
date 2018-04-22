@@ -35,10 +35,18 @@ class Client
     public function sessionIsValid()
     { return $this->authClient->sessionIsValid(); }
 
-    public function getJobOrdersWhere($conditions, $fields = ['id'])
+    public function getJobOrdersModifiedSince($startDateTime, array $extraParameters = null)
+    {
+        $timestamp = $startDateTime->format('YmdHis');
+        $conditions = "dateLastModified:[$timestamp TO *]";
+        $jobOrders = $this->getJobOrdersWhere($conditions, $extraParameters);
+        return $jobOrders;
+    }
+
+    public function getJobOrdersWhere($conditions, array $extraParameters = null)
     {
         $ids = $this->getAllJobOrderIdsWhere($conditions)->data;
-        $jobOrders = $this->getJobOrdersById($ids, $fields);
+        $jobOrders = $this->getJobOrdersById($ids, $extraParameters);
         return $jobOrders;
     }
 
@@ -51,7 +59,7 @@ class Client
         return $response;
     }
 
-    public function getJobOrdersById(array $ids, array $fields = ['id'])
+    public function getJobOrdersById(array $ids, array $extraParameters = null)
     {
         $jobsPerRequest = self::MAX_ENTITY_REQUEST_COUNT;
         $chunkedIds = array_chunk($ids, $jobsPerRequest);
@@ -63,14 +71,15 @@ class Client
                 $conditions .= "id:$id OR ";
             $conditions = substr($conditions, 0, -4);
 
+            $requestParameters = array_merge($extraParameters, [
+                'query' => $conditions,
+                'count' => $jobsPerRequest
+            ]);
+
             $requests[] = $this->buildRequest(
                 'GET',
                 'search/JobOrder',
-                [
-                    'query' => $conditions,
-                    'count' => $jobsPerRequest,
-                    'fields' => implode(',', $fields)
-                ]
+                $requestParameters
             );
         }
 
