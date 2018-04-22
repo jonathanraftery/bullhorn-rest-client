@@ -7,6 +7,9 @@ use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 
 final class ClientTest extends TestCase
 {
+    /**
+     * @group new
+     */
     function testCanBeConstructedFromValidCredentials()
     {
         $credentialsFileName = __DIR__.'/data/client-credentials.json';
@@ -116,7 +119,7 @@ final class ClientTest extends TestCase
         );
         $jobOrders = $client->getJobOrdersWhere(
             'isOpen:1',
-            ['id', 'title', 'isOpen']
+            ['fields' => 'id,title,isOpen']
         );
         $this->assertEquals(count($jobOrders), $response->total);
         return $jobOrders;
@@ -138,6 +141,28 @@ final class ClientTest extends TestCase
                 $seen[] = $jobOrder->id;
         }
         $this->assertFalse($duplicateFound);
+    }
+
+    /**
+     * @depends testCanBeConstructedFromValidCredentials
+     * @group new
+     */
+    function testGetsCorrectJobsForQueryByDate($client)
+    {
+        $timestamp = strtotime('-3 days');
+        $dateTime = DateTime::createFromFormat('U', $timestamp);
+        $jobOrders = $client->getJobOrdersModifiedSince(
+            $dateTime,
+            [
+                'fields' => 'id,dateLastModified',
+                'sort' => 'dateLastModified'
+            ]
+        );
+        $incorrectJobsFound = false;
+        foreach ($jobOrders as $jobOrder)
+            if ($jobOrder->dateLastModified < ($timestamp * 1000))
+                $incorrectJobsFound = true;
+        $this->assertFalse($incorrectJobsFound);
     }
 
     /**
