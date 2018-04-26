@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 use jonathanraftery\Bullhorn\Rest\Client;
 use jonathanraftery\Bullhorn\Rest\Authentication\AuthorizationException;
+use jonathanraftery\Bullhorn\MemoryDataStore;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 
 final class ClientTest extends TestCase
@@ -38,7 +39,8 @@ final class ClientTest extends TestCase
             'testing_invalid_client_id',
             $credentials['clientSecret'],
             $credentials['username'],
-            $credentials['password']
+            $credentials['password'],
+            new MemoryDataStore()
         );
     }
 
@@ -52,7 +54,8 @@ final class ClientTest extends TestCase
             $credentials['clientId'],
             'testing_invalid_client_secret',
             $credentials['username'],
-            $credentials['password']
+            $credentials['password'],
+            new MemoryDataStore()
         );
     }
     /**
@@ -65,7 +68,8 @@ final class ClientTest extends TestCase
             $credentials['clientId'],
             $credentials['clientSecret'],
             'testing_invalid_username',
-            $credentials['password']
+            $credentials['password'],
+            new MemoryDataStore()
         );
     }
     /**
@@ -78,108 +82,67 @@ final class ClientTest extends TestCase
             $credentials['clientId'],
             $credentials['clientSecret'],
             $credentials['username'],
-            'testing_invalid_password'
+            'testing_invalid_password',
+            new MemoryDataStore()
         );
     }
 
     /**
-     * @dataProvider credentialsProvider
+     * @depends testCanBeConstructedFromValidCredentials
      */
-    function testGetsResponseForValidRequest($credentials)
+    function testGetsResponseForValidRequest($client)
     {
-        $client = new Client(
-            $credentials['clientId'],
-            $credentials['clientSecret'],
-            $credentials['username'],
-            $credentials['password']
-        );
-        $response = $client->get('search/JobOrder', []);
+        $response = $client->request('get', 'search/JobOrder', []);
         $this->assertTrue(isset($response->searchFields));
     }
 
     /**
      * @depends testCanBeConstructedFromValidCredentials
      */
-    function testGetsAllJobIdsForValidJobOrderIdSearch($client)
+    function testBuildsPostBodyCorrectly($client)
     {
-        $response = $client->getAllJobOrderIdsWhere(
-            'isOpen:1 AND isPublic:1 AND isDeleted:0' 
-        );
-        $this->assertEquals($response->total, count($response->data));
-    }
-
-    /**
-     * @depends testCanBeConstructedFromValidCredentials
-     */
-    function testGetsAllJobsWhenMoreThanMaxReturned($client)
-    {
-        $response = $client->get(
+        $parameters = [
+            'query' => 'isOpen:1 AND isPublic:1 AND isDeleted:0'
+        ];
+        $request = $client->buildRequest(
+            'POST',
             'search/JobOrder',
-            ['query' => 'isOpen:1']
+            $parameters
         );
-        $jobOrders = $client->getJobOrdersWhere(
-            'isOpen:1',
-            ['fields' => 'id,title,isOpen']
-        );
-        $this->assertEquals(count($jobOrders), $response->total);
-        return $jobOrders;
-    }
-
-    /**
-     * @depends testGetsAllJobsWhenMoreThanMaxReturned
-     */
-    function testNoDuplicateJobsReturnedForJobQuery($jobOrders)
-    {
-        $seen = [];
-        $duplicateFound = false;
-        foreach ($jobOrders as $jobOrder) {
-            if (in_array($jobOrder->id, $seen)) {
-                $duplicateFound = true;
-                break;
-            }
-            else
-                $seen[] = $jobOrder->id;
-        }
-        $this->assertFalse($duplicateFound);
+        $expectedBody = http_build_query($parameters);
+        $this->assertEquals($request->getBody()->getContents(), $expectedBody);
     }
 
     /**
      * @depends testCanBeConstructedFromValidCredentials
      * @group new
      */
-    function testGetsCorrectJobsForQueryByDate($client)
+    function testRefreshesSessionCorrectly($client)
     {
-        $timestamp = strtotime('-3 days');
-        $dateTime = DateTime::createFromFormat('U', $timestamp);
-        $jobOrders = $client->getJobOrdersModifiedSince(
-            $dateTime,
-            [
-                'fields' => 'id,dateLastModified',
-                'sort' => 'dateLastModified'
-            ]
-        );
-        $incorrectJobsFound = false;
-        foreach ($jobOrders as $jobOrder)
-            if ($jobOrder->dateLastModified < ($timestamp * 1000))
-                $incorrectJobsFound = true;
-        $this->assertFalse($incorrectJobsFound);
+        $dummyRequest = $client->buildRequest('get', 'search/JobOrder', []);
+        $firstRestToken = $dummyRequest->getHeader('BhRestToken')[0];
+        $client->refreshSession();
+        $dummyRequest = $client->buildRequest('get', 'search/JobOrder', []);
+        $secondRestToken = $dummyRequest->getHeader('BhRestToken')[0];
+        $this->assertNotEquals($firstRestToken, $secondRestToken);
+        $this->assertFalse(empty($firstRestToken) || empty($secondRestToken));
     }
 
     /**
      * @depends testCanBeConstructedFromValidCredentials
      */
-    function testBuildsPutBodyCorrectly($client)
+    function testRefreshesSessionIfExpirationDetected($client)
     {
-        $parameters = [
-            'query' => 'isOpen:1 AND isPublic:1 AND isDeleted:0'
-        ];
-        $request = $client->buildRequest(
-            'PUT',
-            'search/JobOrder',
-            $parameters
-        );
-        $expectedBody = http_build_query($parameters);
-        $this->assertEquals($request->getBody()->getContents(), $expectedBody);
+        $client->refreshSession(['ttl' => 1]);
+        $dummyRequest = $client->buildRequest('get', 'search/JobOrder', []);
+        $firstRestToken = $dummyRequest->getHeader('BhRestToken')[0];
+        sleep(70);
+        $response = $client->request('get', 'search/JobOrder', []);
+        print_r($response);
+        $dummyRequest = $client->buildRequest('get', 'search/JobOrder', []);
+        $secondRestToken = $dummyRequest->getHeader('BhRestToken')[0];
+        $this->assertNotEquals($firstRestToken, $secondRestToken);
+        $this->assertFalse(empty($firstRestToken) || empty($secondRestToken));
     }
 
     function credentialsProvider()
