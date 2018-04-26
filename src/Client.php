@@ -17,11 +17,13 @@ class Client
         $clientId,
         $clientSecret,
         $username,
-        $password
+        $password,
+        $dataStore = null
     ) {
         $this->authClient = new AuthClient(
             $clientId,
-            $clientSecret
+            $clientSecret,
+            $dataStore
         );
         $this->authClient->initiateSession(
             $username,
@@ -35,84 +37,22 @@ class Client
     public function sessionIsValid()
     { return $this->authClient->sessionIsValid(); }
 
-    public function getJobOrdersModifiedSince($startDateTime, array $extraParameters = null)
+    public function refreshSession(array $options = [])
     {
-        $timestamp = $startDateTime->format('YmdHis');
-        $conditions = "dateLastModified:[$timestamp TO *]";
-        $jobOrders = $this->getJobOrdersWhere($conditions, $extraParameters);
-        return $jobOrders;
+        $this->authClient->refreshSession($options);
+        $this->httpClient = new HttpClient([
+            'base_uri' => $this->authClient->getRestUrl()
+        ]);
     }
 
-    public function getJobOrdersWhere($conditions, array $extraParameters = null)
-    {
-        $ids = $this->getAllJobOrderIdsWhere($conditions)->data;
-        $jobOrders = $this->getJobOrdersById($ids, $extraParameters);
-        return $jobOrders;
-    }
-
-    public function getAllJobOrderIdsWhere($conditions)
-    {
-        $response = $this->get(
-            'search/JobOrder',
-            ['query' => $conditions]
-        );
-        return $response;
-    }
-
-    public function getJobOrdersById(array $ids, array $extraParameters = null)
-    {
-        $jobsPerRequest = self::MAX_ENTITY_REQUEST_COUNT;
-        $chunkedIds = array_chunk($ids, $jobsPerRequest);
-        $requests = [];
-
-        foreach ($chunkedIds as $ids) {
-            $conditions = '';
-            foreach ($ids as $id)
-                $conditions .= "id:$id OR ";
-            $conditions = substr($conditions, 0, -4);
-
-            $requestParameters = array_merge($extraParameters, [
-                'query' => $conditions,
-                'count' => $jobsPerRequest
-            ]);
-
-            $requests[] = $this->buildRequest(
-                'GET',
-                'search/JobOrder',
-                $requestParameters
-            );
-        }
-
-        $promises = [];
-        foreach ($requests as $request)
-            $promises[] = $this->httpClient->sendAsync($request);
-        $responses = Promise\unwrap($promises);
-
-        $jobOrders = [];
-        foreach ($responses as $response) {
-            $data = json_decode($response->getBody()->getContents())->data;
-            foreach ($data as $jobOrder)
-                $jobOrders[] = $jobOrder;
-        }
-
-        return $jobOrders;
-    }
-
-    public function get($url, $parameters = [], $headers = [])
+    public function search(
+        $entityName,
+        $parameters = [],
+        $headers = [])
     {
         return $this->request(
             'GET',
-            $url,
-            $parameters,
-            $headers
-        );
-    }
-
-    public function post($url, $parameters = [], $headers = [])
-    {
-        return $this->request(
-            'POST',
-            $url,
+            'search/' . $entityName,
             $parameters,
             $headers
         );
@@ -133,13 +73,6 @@ class Client
         return $this->getResponse($request);
     }
 
-    public function getResponse($request)
-    {
-        $response = $this->httpClient->send($request);
-        $responseBody = $response->getBody()->getContents();
-        return json_decode($responseBody);
-    }
-
     public function buildRequest(
         $method,
         $url,
@@ -152,7 +85,11 @@ class Client
         );
 
         if ($method === 'GET') {
-            $query = http_build_query($parameters);
+            if (is_array($parameters))
+                $query = http_build_query($parameters);
+            else
+                $query = $parameters;
+
             $uri = new Uri($url);
             $fullUri = $uri->withQuery($query);
 
@@ -171,10 +108,33 @@ class Client
         }
     }
 
+    public function refreshRequest($request)
+    {
+        return $this->buildRequest(
+            $request->getMethod(),
+            $request->getUri(),
+            $request->getUri()->getQuery()
+        );
+    }
+
+    public function getResponse($request)
+    {
+        try {
+            $response = $this->httpClient->send($request);
+            $responseBody = $response->getBody()->getContents();
+            return json_decode($responseBody);
+        }
+        catch (\GuzzleHttp\Exception\ClientException $e) {
+            $this->refreshSession();
+            $this->getResponse(
+                $this->refreshRequest($request)
+            );
+        }
+    }
+
+
     private function getDefaultHeaders()
     {
-        return [
-            'BhRestToken' => $this->authClient->getRestToken()
-        ];
+        return [ 'BhRestToken' => $this->authClient->getRestToken() ];
     }
 }
