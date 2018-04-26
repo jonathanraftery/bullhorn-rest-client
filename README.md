@@ -18,7 +18,8 @@ $client = new BullhornClient(
     'bullhorn_password'
 );
 
-$response = $client->get(
+$response = $client->request(
+    'GET',
     'search/JobOrder',
     ['query' => 'id:7777']
 );
