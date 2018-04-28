@@ -25,7 +25,7 @@ class Client
             $clientSecret,
             $dataStore
         );
-        $this->authClient->initiateSession(
+        $this->initiateSession(
             $username,
             $password
         );
@@ -36,6 +36,9 @@ class Client
 
     public function sessionIsValid()
     { return $this->authClient->sessionIsValid(); }
+
+    public function initiateSession($username, $password, array $options = [])
+    { $this->authClient->initiateSession($username, $password, $options); }
 
     public function refreshSession(array $options = [])
     {
@@ -48,11 +51,25 @@ class Client
     public function search(
         $entityName,
         $parameters = [],
-        $headers = [])
-    {
+        $headers = []
+    ) {
         return $this->request(
             'GET',
             'search/' . $entityName,
+            $parameters,
+            $headers
+        );
+    }
+
+    public function eventSubscription(
+        $method,
+        $subscriptionName,
+        $parameters = [],
+        $headers = []
+    ) {
+        return $this->request(
+            $method,
+            'event/subscription/' . $subscriptionName,
             $parameters,
             $headers
         );
@@ -84,7 +101,7 @@ class Client
             $this->getDefaultHeaders()
         );
 
-        if ($method === 'GET') {
+        if ($method === 'GET' || $method === 'PUT') {
             if (is_array($parameters))
                 $query = http_build_query($parameters);
             else
@@ -125,13 +142,16 @@ class Client
             return json_decode($responseBody);
         }
         catch (\GuzzleHttp\Exception\ClientException $e) {
-            $this->refreshSession();
-            $this->getResponse(
-                $this->refreshRequest($request)
-            );
+            if ($e->getResponse()->getStatusCode() == 401) {
+                $this->refreshSession();
+                $this->getResponse(
+                    $this->refreshRequest($request)
+                );
+            }
+            else
+                throw $e;
         }
     }
-
 
     private function getDefaultHeaders()
     {
