@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 use jonathanraftery\Bullhorn\Rest\Client;
 use jonathanraftery\Bullhorn\Rest\Authentication\AuthorizationException;
+use jonathanraftery\Bullhorn\Rest\Authentication\Exception\InvalidRefreshTokenException;
 use jonathanraftery\Bullhorn\MemoryDataStore;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 
@@ -22,7 +23,8 @@ final class ClientTest extends TestCase
             $credentials['clientId'],
             $credentials['clientSecret'],
             $credentials['username'],
-            $credentials['password']
+            $credentials['password'],
+            new MemoryDataStore()
         );
 
         $this->assertTrue($client->sessionIsValid());
@@ -114,14 +116,33 @@ final class ClientTest extends TestCase
     }
 
     /**
+     * @dataProvider credentialsProvider
+     */
+    function testThrowsExceptionOnInvalidRefreshToken($credentials)
+    {
+        $this->expectException(InvalidRefreshTokenException::class);
+        $dataStore = new MemoryDataStore();
+        $client = new Client(
+            $credentials['clientId'],
+            $credentials['clientSecret'],
+            $credentials['username'],
+            $credentials['password'],
+            $dataStore
+        );
+        $dataKey = $credentials['clientId'] . '-refreshToken';
+        $dataStore->store($dataKey, 'invalid-refresh-token');
+        $client->refreshSession();
+    }
+
+    /**
      * @depends testCanBeConstructedFromValidCredentials
-     * @group new
      */
     function testRefreshesSessionCorrectly($client)
     {
+        $this->checkedClientRefresh($client);
         $dummyRequest = $client->buildRequest('get', 'search/JobOrder', []);
         $firstRestToken = $dummyRequest->getHeader('BhRestToken')[0];
-        $client->refreshSession();
+        $this->checkedClientRefresh($client);
         $dummyRequest = $client->buildRequest('get', 'search/JobOrder', []);
         $secondRestToken = $dummyRequest->getHeader('BhRestToken')[0];
         $this->assertNotEquals($firstRestToken, $secondRestToken);
@@ -133,7 +154,7 @@ final class ClientTest extends TestCase
      */
     function testRefreshesSessionIfExpirationDetected($client)
     {
-        $client->refreshSession(['ttl' => 1]);
+        $this->checkedClientRefresh($client, ['ttl' => 1]);
         $dummyRequest = $client->buildRequest('get', 'search/JobOrder', []);
         $firstRestToken = $dummyRequest->getHeader('BhRestToken')[0];
         sleep(70);
@@ -143,6 +164,80 @@ final class ClientTest extends TestCase
         $secondRestToken = $dummyRequest->getHeader('BhRestToken')[0];
         $this->assertNotEquals($firstRestToken, $secondRestToken);
         $this->assertFalse(empty($firstRestToken) || empty($secondRestToken));
+    }
+
+    /**
+     * @depends testCanBeConstructedFromValidCredentials
+     */
+    function testGetsValidResponseForSearch($client)
+    {
+        $response = $client->search('JobOrder');
+        $this->assertTrue(isset($response->searchFields));
+    }
+
+    /**
+     * @depends testCanBeConstructedFromValidCredentials
+     * @group new
+     */
+    function testCreateEventSubscription($client)
+    {
+        $testSubscriptionName = 'TestUpdatedJobOrders';
+        $response = $client->eventSubscription(
+            'PUT',
+            $testSubscriptionName,
+            [
+                'type' => 'entity',
+                'names' => 'JobOrder',
+                'eventTypes' => 'INSERTED,UPDATED,DELETED'
+            ]
+        );
+        $this->assertTrue(isset($response->createdOn));
+        return $testSubscriptionName;
+    }
+
+    /**
+     * @depends testCanBeConstructedFromValidCredentials
+     * @depends testCreateEventSubscription
+     * @group new
+     */
+    function testGetEvents($client, $testSubscriptionName)
+    {
+        $response = $client->eventSubscription(
+            'GET',
+            $testSubscriptionName,
+            ['maxEvents' => 10]
+        );
+        print_r($response);
+        $this->assertTrue(isset($response->requestId));
+    }
+
+    /**
+     * @depends testCanBeConstructedFromValidCredentials
+     * @depends testCreateEventSubscription
+     * @group new
+     */
+    function testDeleteEventSubscription($client, $testSubscriptionName)
+    {
+        $response = $client->eventSubscription(
+            'DELETE',
+            $testSubscriptionName
+        );
+        $this->assertTrue(isset($response->result));
+    }
+
+    function checkedClientRefresh($client, array $options = [])
+    {
+        try {
+            $client->refreshSession($options);
+        }
+        catch (InvalidRefreshTokenException $e) {
+            $credentials = $this->credentialsProvider();
+            $client->initiateSession(
+                $credentials[0][0]['username'],
+                $credentials[0][0]['password'],
+                $options
+            );
+        }
     }
 
     function credentialsProvider()
