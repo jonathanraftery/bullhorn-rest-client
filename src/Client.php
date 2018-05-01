@@ -70,113 +70,94 @@ class Client
         ]);
     }
 
-    public function search(
-        $entityName,
-        $parameters = [],
-        $headers = []
+    public function refreshOrInitiateSession(
+        $username,
+        $password,
+        array $options = []
     ) {
-        return $this->request(
-            'GET',
-            'search/' . $entityName,
-            $parameters,
-            $headers
-        );
+        try {
+            $this->refreshSession($options);
+        }
+        catch (InvalidRefreshTokenException $e) {
+            $this->initiateSession(
+                $username,
+                $password,
+                $options
+            );
+        }
     }
 
-    public function eventSubscription(
-        $method,
-        $subscriptionName,
-        $parameters = [],
-        $headers = []
-    ) {
-        return $this->request(
-            $method,
-            'event/subscription/' . $subscriptionName,
-            $parameters,
-            $headers
-        );
+    public function sessionIsValid()
+    {
+        return $this->authClient->sessionIsValid();
     }
 
     public function request(
         $method,
         $url,
-        $parameters = [],
+        $options = [],
         $headers = [] 
     ) {
-        $request = $this->buildRequest(
-            $method,
-            $url,
-            $parameters,
-            $headers
-        );
-        return $this->getResponse($request);
-    }
+        $fullHeaders = $this->appendDefaultHeadersTo($headers);
+        $options['headers'] = $fullHeaders;
 
-    public function buildRequest(
-        $method,
-        $url,
-        $parameters = [],
-        $headers = []
-    ) {
-        $fullHeaders = array_merge(
-            $headers,
-            $this->getDefaultHeaders()
-        );
-
-        if ($method === 'GET' || $method === 'PUT') {
-            if (is_array($parameters))
-                $query = http_build_query($parameters);
-            else
-                $query = $parameters;
-
-            $uri = new Uri($url);
-            $fullUri = $uri->withQuery($query);
-
-            return new HttpRequest(
-                $method,
-                $fullUri,
-                $fullHeaders
-            );
-        } else {
-            return new HttpRequest(
+        try {
+            $response = $this->httpClient->request(
                 $method,
                 $url,
-                $fullHeaders,
-                http_build_query($parameters)
+                $options
             );
-        }
-    }
-
-    public function refreshRequest($request)
-    {
-        return $this->buildRequest(
-            $request->getMethod(),
-            $request->getUri(),
-            $request->getUri()->getQuery()
-        );
-    }
-
-    public function getResponse($request)
-    {
-        try {
-            $response = $this->httpClient->send($request);
             $responseBody = $response->getBody()->getContents();
             return json_decode($responseBody);
         }
         catch (\GuzzleHttp\Exception\ClientException $e) {
-            if ($e->getResponse()->getStatusCode() == 401) {
-                $this->refreshSession();
-                $this->getResponse(
-                    $this->refreshRequest($request)
-                );
+            if ($this->options['autoRefresh']) {
+                $request = [
+                    'method' => $method,
+                    'url' => $url,
+                    'options' => $options,
+                    'headers' => $headers
+                ];
+                return $this->handleRequestException($request, $e);
             }
             else
                 throw $e;
         }
     }
 
-    private function getDefaultHeaders()
+    public function __get($resourceName)
     {
-        return [ 'BhRestToken' => $this->authClient->getRestToken() ];
+        $className = 'jonathanraftery\\Bullhorn\\Rest\\Resources\\' . $resourceName;
+        return new $className($this);
+    }
+
+    private function handleRequestException($request, $exception)
+    {
+        if ($exception->getResponse()->getStatusCode() == 401)
+            return $this->handleExpiredSessionOnRequest($request);
+        else
+            throw $exception;
+    }
+
+    private function handleExpiredSessionOnRequest($request)
+    {
+        $this->refreshSession();
+        return $this->request(
+            $request['method'],
+            $request['url'],
+            $request['options'],
+            $request['headers']
+        );
+    }
+
+    private function appendDefaultHeadersTo($headers)
+    {
+        $defaultHeaders = [
+            'BhRestToken' => $this->authClient->getRestToken()
+        ];
+        return array_merge(
+            $headers,
+            $defaultHeaders
+        );
     }
 }
