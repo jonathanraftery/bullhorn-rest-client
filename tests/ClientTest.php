@@ -9,243 +9,182 @@ use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 
 final class ClientTest extends TestCase
 {
-    /**
-     * @group new
-     */
-    function testCanBeConstructedFromValidCredentials()
+    protected $client;
+    protected $credentials;
+
+    protected function setUp()
     {
         $credentialsFileName = __DIR__.'/data/client-credentials.json';
         $credentialsFile = fopen($credentialsFileName, 'r');
         $credentialsJson = fread($credentialsFile, filesize($credentialsFileName));
-        $credentials = json_decode($credentialsJson, true);
+        $this->credentials = json_decode($credentialsJson, true);
 
-        $client = new Client(
-            $credentials['clientId'],
-            $credentials['clientSecret'],
-            $credentials['username'],
-            $credentials['password'],
+        $this->client = new Client(
+            $this->credentials['clientId'],
+            $this->credentials['clientSecret'],
             new MemoryDataStore()
         );
-
-        $this->assertTrue($client->sessionIsValid());
-        return $client;
+        $this->client->initiateSession(
+            $this->credentials['username'],
+            $this->credentials['password']
+        );
     }
 
-    /**
-     * @dataProvider credentialsProvider
-     */
-    function testThrowsExceptionOnInvalidClientId($credentials)
+    function testCanInitiateSessionWithValidCredentials()
+    {
+        $this->assertTrue($this->client->sessionIsValid());
+    }
+
+    function testThrowsExceptionOnInvalidClientId()
     {
         $this->expectException(AuthorizationException::class);
         $client = new Client(
             'testing_invalid_client_id',
-            $credentials['clientSecret'],
-            $credentials['username'],
-            $credentials['password'],
+            $this->credentials['clientSecret'],
             new MemoryDataStore()
+        );
+        $client->initiateSession(
+            $this->credentials['username'],
+            $this->credentials['password']
         );
     }
 
-    /**
-     * @dataProvider credentialsProvider
-     */
-    function testThrowsExceptionOnInvalidClientSecret($credentials)
+    function testThrowsExceptionOnInvalidClientSecret()
     {
         $this->expectException(AuthorizationException::class);
         $client = new Client(
-            $credentials['clientId'],
+            $this->credentials['clientId'],
             'testing_invalid_client_secret',
-            $credentials['username'],
-            $credentials['password'],
             new MemoryDataStore()
         );
-    }
-    /**
-     * @dataProvider credentialsProvider
-     */
-    function testThrowsExceptionOnInvalidUsername($credentials)
-    {
-        $this->expectException(AuthorizationException::class);
-        $client = new Client(
-            $credentials['clientId'],
-            $credentials['clientSecret'],
-            'testing_invalid_username',
-            $credentials['password'],
-            new MemoryDataStore()
-        );
-    }
-    /**
-     * @dataProvider credentialsProvider
-     */
-    function testThrowsExceptionOnInvalidPassword($credentials)
-    {
-        $this->expectException(AuthorizationException::class);
-        $client = new Client(
-            $credentials['clientId'],
-            $credentials['clientSecret'],
-            $credentials['username'],
-            'testing_invalid_password',
-            new MemoryDataStore()
+        $client->initiateSession(
+            $this->credentials['username'],
+            $this->credentials['password']
         );
     }
 
-    /**
-     * @depends testCanBeConstructedFromValidCredentials
-     */
-    function testGetsResponseForValidRequest($client)
+    function testThrowsExceptionOnInvalidUsername()
     {
-        $response = $client->request('get', 'search/JobOrder', []);
+        $this->expectException(AuthorizationException::class);
+        $this->client->initiateSession(
+            'testing_invalid_username',
+            $this->credentials['password']
+        );
+    
+    }
+    
+    function testThrowsExceptionOnInvalidPassword()
+    {
+        $this->expectException(AuthorizationException::class);
+        $this->client->initiateSession(
+            $this->credentials['username'],
+            'testing_invalid_password'
+        );
+    }
+
+    function testGetsResponseForValidRequest()
+    {
+        $response = $this->client->request('get', 'search/JobOrder');
         $this->assertTrue(isset($response->searchFields));
     }
 
-    /**
-     * @depends testCanBeConstructedFromValidCredentials
-     */
-    function testBuildsPostBodyCorrectly($client)
-    {
-        $parameters = [
-            'query' => 'isOpen:1 AND isPublic:1 AND isDeleted:0'
-        ];
-        $request = $client->buildRequest(
-            'POST',
-            'search/JobOrder',
-            $parameters
-        );
-        $expectedBody = http_build_query($parameters);
-        $this->assertEquals($request->getBody()->getContents(), $expectedBody);
-    }
-
-    /**
-     * @dataProvider credentialsProvider
-     */
-    function testThrowsExceptionOnInvalidRefreshToken($credentials)
+    function testThrowsExceptionOnInvalidRefreshToken()
     {
         $this->expectException(InvalidRefreshTokenException::class);
         $dataStore = new MemoryDataStore();
-        $client = new Client(
-            $credentials['clientId'],
-            $credentials['clientSecret'],
-            $credentials['username'],
-            $credentials['password'],
+        $localClient = new Client(
+            $this->credentials['clientId'],
+            $this->credentials['clientSecret'],
             $dataStore
         );
-        $dataKey = $credentials['clientId'] . '-refreshToken';
+        $localClient->initiateSession(
+            $this->credentials['username'],
+            $this->credentials['password']
+        );
+        $dataKey = $this->credentials['clientId'] . '-refreshToken';
         $dataStore->store($dataKey, 'invalid-refresh-token');
-        $client->refreshSession();
+        $localClient->refreshSession();
     }
 
-    /**
-     * @depends testCanBeConstructedFromValidCredentials
-     */
-    function testRefreshesSessionCorrectly($client)
+    function testPassingTtlOptionSetsTtl()
     {
-        $this->checkedClientRefresh($client);
-        $dummyRequest = $client->buildRequest('get', 'search/JobOrder', []);
-        $firstRestToken = $dummyRequest->getHeader('BhRestToken')[0];
-        $this->checkedClientRefresh($client);
-        $dummyRequest = $client->buildRequest('get', 'search/JobOrder', []);
-        $secondRestToken = $dummyRequest->getHeader('BhRestToken')[0];
-        $this->assertNotEquals($firstRestToken, $secondRestToken);
-        $this->assertFalse(empty($firstRestToken) || empty($secondRestToken));
-    }
-
-    /**
-     * @depends testCanBeConstructedFromValidCredentials
-     */
-    function testRefreshesSessionIfExpirationDetected($client)
-    {
-        $this->checkedClientRefresh($client, ['ttl' => 1]);
-        $dummyRequest = $client->buildRequest('get', 'search/JobOrder', []);
-        $firstRestToken = $dummyRequest->getHeader('BhRestToken')[0];
+        $localClient = new Client(
+            $this->credentials['clientId'],
+            $this->credentials['clientSecret'],
+            new MemoryDataStore(),
+            ['autoRefresh' => false]
+        );
+        $localClient->initiateSession(
+            $this->credentials['username'],
+            $this->credentials['password'],
+            ['ttl' => 1]
+        );
         sleep(70);
-        $response = $client->request('get', 'search/JobOrder', []);
-        print_r($response);
-        $dummyRequest = $client->buildRequest('get', 'search/JobOrder', []);
-        $secondRestToken = $dummyRequest->getHeader('BhRestToken')[0];
-        $this->assertNotEquals($firstRestToken, $secondRestToken);
-        $this->assertFalse(empty($firstRestToken) || empty($secondRestToken));
-    }
-
-    /**
-     * @depends testCanBeConstructedFromValidCredentials
-     */
-    function testGetsValidResponseForSearch($client)
-    {
-        $response = $client->search('JobOrder');
-        $this->assertTrue(isset($response->searchFields));
-    }
-
-    /**
-     * @depends testCanBeConstructedFromValidCredentials
-     * @group new
-     */
-    function testCreateEventSubscription($client)
-    {
-        $testSubscriptionName = 'TestUpdatedJobOrders';
-        $response = $client->eventSubscription(
-            'PUT',
-            $testSubscriptionName,
-            [
-                'type' => 'entity',
-                'names' => 'JobOrder',
-                'eventTypes' => 'INSERTED,UPDATED,DELETED'
-            ]
-        );
-        $this->assertTrue(isset($response->createdOn));
-        return $testSubscriptionName;
-    }
-
-    /**
-     * @depends testCanBeConstructedFromValidCredentials
-     * @depends testCreateEventSubscription
-     * @group new
-     */
-    function testGetEvents($client, $testSubscriptionName)
-    {
-        $response = $client->eventSubscription(
-            'GET',
-            $testSubscriptionName,
-            ['maxEvents' => 10]
-        );
-        print_r($response);
-        $this->assertTrue(isset($response->requestId));
-    }
-
-    /**
-     * @depends testCanBeConstructedFromValidCredentials
-     * @depends testCreateEventSubscription
-     * @group new
-     */
-    function testDeleteEventSubscription($client, $testSubscriptionName)
-    {
-        $response = $client->eventSubscription(
-            'DELETE',
-            $testSubscriptionName
-        );
-        $this->assertTrue(isset($response->result));
-    }
-
-    function checkedClientRefresh($client, array $options = [])
-    {
+        $exceptionCaught = false;
         try {
-            $client->refreshSession($options);
+            $response = $localClient->request('get', 'search/JobOrder');
         }
-        catch (InvalidRefreshTokenException $e) {
-            $credentials = $this->credentialsProvider();
-            $client->initiateSession(
-                $credentials[0][0]['username'],
-                $credentials[0][0]['password'],
-                $options
+        catch (GuzzleHttp\Exception\ClientException $e) {
+            $exceptionCaught = true;
+            $expectedStatusCode = 401;
+            $this->assertEquals(
+                $expectedStatusCode,
+                $e->getResponse()->getStatusCode()
             );
         }
+        $this->assertTrue($exceptionCaught);
     }
 
-    function credentialsProvider()
+    function testRefreshesSessionIfExpirationDetected()
     {
-        $credentialsFileName = __DIR__.'/data/client-credentials.json';
-        $credentialsFile = fopen($credentialsFileName, 'r');
-        $credentialsJson = fread($credentialsFile, filesize($credentialsFileName));
-        $credentials = json_decode($credentialsJson, true);
-        return [[$credentials]];
+        $this->checkedClientRefresh(['ttl' => 1]);
+        sleep(70);
+        $this->assertTrue($this->checkForValidResponse());
+    }
+
+    function testEventSubscriptionCreate()
+    {
+        $subscriptionName = 'TestSubscription';
+        $response = $this->client->EventSubscription->create(
+            $subscriptionName,
+            'JobOrder',
+            'INSERTED,UPDATED,DELETED'
+        );
+        $this->assertTrue(isset($response->createdOn));
+        return $subscriptionName;
+    }
+
+    /**
+     * @depends testEventSubscriptionCreate
+     */
+    function testEventSubscriptionGet($subscriptionName)
+    {
+        $this->assertTrue(true);
+        return $subscriptionName;
+    }
+
+    /**
+     * @depends testEventSubscriptionGet
+     */
+    function testEventSubscriptionDelete($subscriptionName)
+    {
+        $response = $this->client->EventSubscription->delete($subscriptionName);
+        $expectedResult = 1;
+        $this->assertEquals($response->result, $expectedResult);
+    }
+
+    private function checkForValidResponse()
+    {
+        $response = $this->client->request('get', 'search/JobOrder');
+        return isset($response->searchFields);
+    }
+
+    private function checkedClientRefresh(array $options = [])
+    {
+        $this->client->refreshOrInitiateSession(
+            $this->credentials['username'],
+            $this->credentials['password'],
+            $options
+        );
     }
 }
