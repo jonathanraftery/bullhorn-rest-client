@@ -9,36 +9,58 @@ use GuzzleHttp\Psr7\Uri;
 
 class Client
 {
-    const MAX_ENTITY_REQUEST_COUNT = 100;
     private $authClient;
     private $httpClient;
+    private $options;
 
     public function __construct(
         $clientId,
         $clientSecret,
-        $username,
-        $password,
-        $dataStore = null
+        $dataStore = null,
+        array $options = []
     ) {
         $this->authClient = new AuthClient(
             $clientId,
             $clientSecret,
             $dataStore
         );
-        $this->initiateSession(
-            $username,
-            $password
+        
+        $defaultOptions = [
+            'autoRefresh' => true,
+            'maxSessionRetry' => 5
+        ];
+        $this->options = array_merge(
+            $defaultOptions,
+            $options
         );
+    }
+
+    public function initiateSession(
+        $username,
+        $password,
+        array $options = []
+    ) {
+        $gotSession = false;
+        $tries = 0;
+        do {
+            try {
+                $this->authClient->initiateSession(
+                    $username,
+                    $password,
+                    $options
+                );
+                $gotSession = true;
+            } catch (\GuzzleHttp\Exception\ClientException $e) {
+                ++$tries;
+                if ($tries >= $this->options['maxSessionRetry'])
+                    throw $e;
+            }
+        } while (!$gotSession);
+
         $this->httpClient = new HttpClient([
             'base_uri' => $this->authClient->getRestUrl()
         ]);
     }
-
-    public function sessionIsValid()
-    { return $this->authClient->sessionIsValid(); }
-
-    public function initiateSession($username, $password, array $options = [])
-    { $this->authClient->initiateSession($username, $password, $options); }
 
     public function refreshSession(array $options = [])
     {
