@@ -12,10 +12,12 @@ $ composer require jonathanraftery/bullhorn-rest-client
 use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
 
 $client = new BullhornClient(
-    'client_id',
-    'client_secret',
-    'bullhorn_username',
-    'bullhorn_password'
+    'client-id',
+    'client-secret'
+);
+$client->initiateSession(
+    'username',
+    'password'
 );
 
 $response = $client->request(
@@ -23,4 +25,8 @@ $response = $client->request(
     'search/JobOrder',
     ['query' => 'id:7777']
 );
+
+// session will automatically refresh if expiration detected
+// or can be refreshed manually (shown with optional parameters)
+$client->refreshSession(['ttl' => 60]);
 ```
