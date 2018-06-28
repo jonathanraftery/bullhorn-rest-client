@@ -22,8 +22,7 @@ $client->initiateSession(
 
 $response = $client->request(
     'GET',
-    'search/JobOrder',
-    ['query' => 'id:7777']
+    'search/JobOrder?query=id:7777'
 );
 
 // session will automatically refresh if expiration detected
