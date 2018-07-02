@@ -125,6 +125,43 @@ class Client
         }
     }
 
+    public function requestMultiple($requests)
+    {
+        $promises = [];
+        foreach ($requests as $request)
+            $promises[] = $this->httpClient->sendAsync($request);
+        $responses = Promise\unwrap($promises);
+        return $responses;
+    }
+
+    public function buildRequest(
+        $method,
+        $url,
+        $parameters = [],
+        $headers = []
+    ) {
+        $headers = $this->appendDefaultHeadersTo($headers);
+
+        if ($method === 'GET') {
+            $query = http_build_query($parameters);
+            $uri = new Uri($url);
+            $fullUri = $uri->withQuery($query);
+
+            return new HttpRequest(
+                $method,
+                $fullUri,
+                $headers
+            );
+        } else {
+            return new HttpRequest(
+                $method,
+                $url,
+                $headers,
+                http_build_query($parameters)
+            );
+        }
+    }
+
     public function __get($resourceName)
     {
         $className = 'jonathanraftery\\Bullhorn\\Rest\\Resources\\' . $resourceName;

@@ -173,6 +173,15 @@ final class ClientTest extends TestCase
         $this->assertEquals($response->result, $expectedResult);
     }
 
+    /**
+     * @group new
+     */
+    function testJobOrders()
+    {
+        $jobs = $this->client->JobOrders->search('isOpen:1 AND isPublic:1 AND isDeleted:0', ['*']);
+        print(count($jobs));
+    }
+
     private function checkForValidResponse()
     {
         $response = $this->client->request('get', 'search/JobOrder');
