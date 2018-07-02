@@ -11,8 +11,9 @@
             "email": "jonathan@jonathanraftery.com"
         }
     ],
+    "minimum-stability": "stable",
     "require": {
-        "jonathanraftery/bullhorn-auth-client": "dev-master",
+        "jonathanraftery/bullhorn-auth-client": "v1.0",
         "guzzlehttp/guzzle": "~6.0"
     },
     "require-dev": {
