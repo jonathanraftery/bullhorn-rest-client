@@ -1,5 +1,7 @@
 # Bullhorn REST Client
 
+**Currently in beta status.**
+
 Provides a simple client for the Bullhorn REST API.
 
 ## Installation
