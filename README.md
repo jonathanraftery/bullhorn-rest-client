@@ -32,6 +32,20 @@ $response = $client->request(
 );
 ```
 
+### PUT/POST Requests
+The client uses [GuzzleHTTP](http://docs.guzzlephp.org/en/stable/) for requests, and the parameters to the request method match those to create a request object in Guzzle. The third parameter is the request options, as described in the [Guzzle documentation](http://docs.guzzlephp.org/en/stable/request-options.html).
+
+To set the body of a PUT/POST request, set the "body" option of the request to the JSON content of the request body such as: 
+```php
+$response = $client->request(
+    'PUT',
+    'entity/Candidate',
+    [
+        'body' => json_encode(['firstName' => 'Alanzo', 'lastName' => 'Smith', 'status' => 'Registered'])
+    ]
+);
+```
+
 ### Entity Requests
 More complex requests can be used for specific entities. The following will retrieve all job orders matching isDeleted:false.
 
