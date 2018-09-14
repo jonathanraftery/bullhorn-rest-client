@@ -2,6 +2,7 @@
 
 namespace jonathanraftery\Bullhorn\Rest;
 use jonathanraftery\Bullhorn\Rest\Authentication\Client as AuthClient;
+use jonathanraftery\Bullhorn\Rest\Authentication\Exception\InvalidRefreshTokenException;
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\Promise;
 use GuzzleHttp\Psr7\Request as HttpRequest;
