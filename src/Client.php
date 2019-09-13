@@ -10,9 +10,9 @@ use GuzzleHttp\Psr7\Uri;
 
 class Client
 {
-    private $authClient;
-    private $httpClient;
-    private $options;
+    protected $authClient;
+    protected $httpClient;
+    protected $options;
 
     public function __construct(
         $clientId,
