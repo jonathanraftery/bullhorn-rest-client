@@ -14,8 +14,9 @@
     "minimum-stability": "stable",
     "require": {
         "jonathanraftery/bullhorn-auth-client": "v1.1.2",
-        "guzzlehttp/guzzle": "~6.0"
-    },
+        "guzzlehttp/guzzle": "~6.0",
+		"ext-json": "*"
+	},
     "require-dev": {
         "phpunit/phpunit": "^7"
     },
