@@ -1,6 +1,8 @@
 <?php
 
 namespace jonathanraftery\Bullhorn\Rest;
+
+use GuzzleHttp\Exception\ClientException;
 use jonathanraftery\Bullhorn\Rest\Authentication\Client as AuthClient;
 use jonathanraftery\Bullhorn\Rest\Authentication\Exception\InvalidRefreshTokenException;
 use GuzzleHttp\Client as HttpClient;
@@ -14,9 +16,17 @@ class Client
     protected $httpClient;
     protected $options;
 
+	/**
+	 * Client constructor
+	 *
+	 * @param string $clientId
+	 * @param string $clientSecret
+	 * @param null $dataStore
+	 * @param array $options
+	 */
     public function __construct(
-        $clientId,
-        $clientSecret,
+        string $clientId,
+        string $clientSecret,
         $dataStore = null,
         array $options = []
     ) {
@@ -25,24 +35,33 @@ class Client
             $clientSecret,
             $dataStore
         );
-        
+
         $defaultOptions = [
             'autoRefresh' => true,
             'maxSessionRetry' => 5
         ];
+
         $this->options = array_merge(
             $defaultOptions,
             $options
         );
     }
 
+	/**
+	 * Creates a new session
+	 *
+	 * @param string $username
+	 * @param string $password
+	 * @param array $options
+	 */
     public function initiateSession(
-        $username,
-        $password,
+        string $username,
+        string $password,
         array $options = []
     ) {
         $gotSession = false;
         $tries = 0;
+
         do {
             try {
                 $this->authClient->initiateSession(
@@ -50,11 +69,14 @@ class Client
                     $password,
                     $options
                 );
+
                 $gotSession = true;
-            } catch (\GuzzleHttp\Exception\ClientException $e) {
+            } catch (ClientException $e) {
                 ++$tries;
-                if ($tries >= $this->options['maxSessionRetry'])
+
+                if ($tries >= $this->options['maxSessionRetry']) {
                     throw $e;
+				}
             }
         } while (!$gotSession);
 
@@ -63,23 +85,37 @@ class Client
         ]);
     }
 
+	/**
+	 * Refreshes the session
+	 *
+	 * @param array $options
+	 * @throws InvalidRefreshTokenException
+	 */
     public function refreshSession(array $options = [])
     {
         $this->authClient->refreshSession($options);
+
         $this->httpClient = new HttpClient([
             'base_uri' => $this->authClient->getRestUrl()
         ]);
     }
 
+	/**
+	 * Refreshes the existing session
+	 * or creates a new session
+	 *
+	 * @param $username
+	 * @param $password
+	 * @param array $options
+	 */
     public function refreshOrInitiateSession(
-        $username,
-        $password,
+        string $username,
+        string $password,
         array $options = []
     ) {
         try {
             $this->refreshSession($options);
-        }
-        catch (InvalidRefreshTokenException $e) {
+        } catch (InvalidRefreshTokenException $e) {
             $this->initiateSession(
                 $username,
                 $password,
@@ -88,58 +124,85 @@ class Client
         }
     }
 
+	/**
+	 * Determines if the current session is valid
+	 *
+	 * @return bool
+	 */
     public function sessionIsValid()
     {
         return $this->authClient->sessionIsValid();
     }
 
+	/**
+	 * Performs a request
+	 *
+	 * @param string $method
+	 * @param string $url
+	 * @param array $options
+	 * @param array $headers
+	 * @return mixed
+	 * @throws InvalidRefreshTokenException
+	 */
     public function request(
-        $method,
-        $url,
-        $options = [],
-        $headers = [] 
+        string $method,
+        string $url,
+        array $options = [],
+        array $headers = []
     ) {
         $fullHeaders = $this->appendDefaultHeadersTo($headers);
         $options['headers'] = $fullHeaders;
 
         try {
-            $response = $this->httpClient->request(
-                $method,
-                $url,
-                $options
-            );
-            $responseBody = $response->getBody()->getContents();
+            $response = $this->httpClient
+				->request($method, $url, $options);
+
+            $responseBody = $response->getBody()
+				->getContents();
+
             return json_decode($responseBody);
-        }
-        catch (\GuzzleHttp\Exception\ClientException $e) {
+        } catch (ClientException $e) {
             if ($this->options['autoRefresh']) {
-                $request = [
-                    'method' => $method,
-                    'url' => $url,
-                    'options' => $options,
-                    'headers' => $headers
-                ];
-                return $this->handleRequestException($request, $e);
+                return $this->handleRequestException(
+                	compact('method', 'url', 'options', 'headers'),
+					$e
+				);
             }
-            else
-                throw $e;
+
+			throw $e;
         }
     }
 
+	/**
+	 * Performs multiple requests asynchronously
+	 *
+	 * @param $requests
+	 * @return array
+	 * @throws \Throwable
+	 */
     public function requestMultiple($requests)
     {
-        $promises = [];
-        foreach ($requests as $request)
-            $promises[] = $this->httpClient->sendAsync($request);
+        $promises = array_map(function ($request) {
+        	return $this->httpClient->sendAsync($request);
+		}, $requests);
+
         $responses = Promise\unwrap($promises);
+
         return $responses;
     }
 
+	/**
+	 * @param $method
+	 * @param $url
+	 * @param array $parameters
+	 * @param array $headers
+	 * @return HttpRequest
+	 */
     public function buildRequest(
-        $method,
-        $url,
-        $parameters = [],
-        $headers = []
+        string $method,
+        string $url,
+        array $parameters = [],
+        array $headers = []
     ) {
         $headers = $this->appendDefaultHeadersTo($headers);
 
@@ -163,23 +226,46 @@ class Client
         }
     }
 
-    public function __get($resourceName)
+	/**
+	 * Magic method to interact with the given entity type
+	 *
+	 * @param $entityType
+	 * @return Entity
+	 */
+    public function __get($entityType)
     {
-        $className = 'jonathanraftery\\Bullhorn\\Rest\\Resources\\' . $resourceName;
-        return new $className($this);
+        return new Entity($this, $entityType);
     }
 
-    private function handleRequestException($request, $exception)
+	/**
+	 * Handles a request exception,
+	 * automatically refreshing the session
+	 *
+	 * @param $request
+	 * @param $exception
+	 * @return mixed
+	 * @throws InvalidRefreshTokenException
+	 */
+    protected function handleRequestException($request, $exception)
     {
-        if ($exception->getResponse()->getStatusCode() == 401)
+        if ($exception->getResponse()->getStatusCode() == 401) {
             return $this->handleExpiredSessionOnRequest($request);
-        else
-            throw $exception;
+		}
+
+		throw $exception;
     }
 
-    private function handleExpiredSessionOnRequest($request)
+	/**
+	 * Refreshes the session and tries the request again
+	 *
+	 * @param $request
+	 * @return mixed
+	 * @throws InvalidRefreshTokenException
+	 */
+    protected function handleExpiredSessionOnRequest($request)
     {
         $this->refreshSession();
+
         return $this->request(
             $request['method'],
             $request['url'],
@@ -188,14 +274,43 @@ class Client
         );
     }
 
-    private function appendDefaultHeadersTo($headers)
+	/**
+	 * Merges the token into the headers
+	 *
+	 * @param $headers
+	 * @return array
+	 */
+    protected function appendDefaultHeadersTo($headers)
     {
         $defaultHeaders = [
             'BhRestToken' => $this->authClient->getRestToken()
         ];
+
         return array_merge(
             $headers,
             $defaultHeaders
         );
+    }
+
+	/**
+	 * Creates an EventSubscription instance
+	 *
+	 * @param string $name
+	 * @return EventSubscription
+	 */
+	public function eventSubscription(string $name)
+	{
+		return new EventSubscription($this, $name);
+    }
+
+	/**
+	 * Alias for eventSubscription
+	 *
+	 * @param string $name
+	 * @return EventSubscription
+	 */
+	public function subscription(string $name)
+	{
+		return $this->eventSubscription($name);
     }
 }

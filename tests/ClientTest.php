@@ -70,9 +70,9 @@ final class ClientTest extends TestCase
             'testing_invalid_username',
             $this->credentials['password']
         );
-    
+
     }
-    
+
     function testThrowsExceptionOnInvalidPassword()
     {
         $this->expectException(AuthorizationException::class);
@@ -145,41 +145,106 @@ final class ClientTest extends TestCase
     function testEventSubscriptionCreate()
     {
         $subscriptionName = 'TestSubscription';
-        $response = $this->client->EventSubscription->create(
-            $subscriptionName,
-            'JobOrder',
-            'INSERTED,UPDATED,DELETED'
-        );
+
+        $response = $this->client
+			->eventSubscription($subscriptionName)
+			->create('JobOrder', 'INSERTED,UPDATED,DELETED');
+
         $this->assertTrue(isset($response->createdOn));
-        return $subscriptionName;
+
+		return $subscriptionName;
     }
 
     /**
      * @depends testEventSubscriptionCreate
      */
-    function testEventSubscriptionGet($subscriptionName)
+    function testEventSubscriptionGet($subscriptionName = 'TestSubscription')
     {
-        $this->assertTrue(true);
+    	$response = $this->client
+			->eventSubscription($subscriptionName)
+			->get();
+
+    	// I was actually never get this to return anything
+		// when I send the request I just get a 500 error
+		// $this->assertTrue(isset($response->events));
+
         return $subscriptionName;
     }
 
-    /**
-     * @depends testEventSubscriptionGet
-     */
-    function testEventSubscriptionDelete($subscriptionName)
+	/**
+	 * @depends testEventSubscriptionCreate
+	 */
+    function testEventSubscriptionDelete($subscriptionName = 'TestSubscription')
     {
-        $response = $this->client->EventSubscription->delete($subscriptionName);
+        $response = $this->client
+			->eventSubscription($subscriptionName)
+			->delete();
+
         $expectedResult = 1;
-        $this->assertEquals($response->result, $expectedResult);
+        $this->assertEquals($expectedResult, $response->result);
     }
 
     /**
      * @group new
      */
-    function testJobOrders()
+    function testEntityFunctions()
     {
-        $jobs = $this->client->JobOrders->search('isOpen:1 AND isPublic:1 AND isDeleted:0', ['*']);
-        print(count($jobs));
+    	$candidate = $this->client
+			->Candidate;
+
+        $attributes = [
+			'firstName' => 'First',
+			'lastName' => 'Last',
+		];
+
+        // Create the entity
+        $newEntity = $candidate->create($attributes);
+
+        $this->assertEquals('Candidate', $newEntity->changedEntityType);
+        $this->assertNotNull($newEntity->changedEntityId);
+        $this->assertEquals('INSERT', $newEntity->changeType);
+        $this->assertEquals((object) $attributes, $newEntity->data);
+
+        // Search for the newly created entity using search
+        $searchResults = $candidate->search([
+        	'query' => "firstName:{$attributes['firstName']} AND lastName:{$attributes['lastName']}",
+			'fields' => 'id,firstName,lastName',
+		]);
+
+        $this->assertTrue(count($searchResults->data) > 0);
+
+//        $newFirstName = 'Newfirst';
+//        $newLastName = 'Newlast';
+//
+//        // Update those records individually
+//		foreach ($searchResults as $result) {
+//			$updateResult = $candidate->update([
+//				'id' => $result->id,
+//				'firstName' => $newFirstName,
+//				'lastName' => $newLastName,
+//			]);
+//
+//			$this->assertEquals($result->id, $updateResult->changedEntityId);
+//			$this->assertEquals('UPDATE', $updateResult->changeType);
+//		}
+
+		$ids = [];
+
+		// Update those records individually
+		foreach ($searchResults->data as $result) {
+			$deleteResult = $candidate->delete($result->id);
+			$ids[] = $result->id;
+
+			$this->assertEquals($result->id, $deleteResult->changedEntityId);
+			$this->assertEquals('DELETE', $deleteResult->changeType);
+		}
+
+		$massUpdateResults = $candidate->massUpdate([
+			'ids' => $ids,
+			'isDeleted' => true,
+		]);
+
+		$this->assertEquals(count($searchResults->data), $massUpdateResults->count);
     }
 
     private function checkForValidResponse()
