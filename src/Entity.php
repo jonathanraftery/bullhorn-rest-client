@@ -268,7 +268,7 @@ class Entity
 			$options['fields'] = 'id';
 		}
 
-		if (isset($options['fields']) && is_array($options['fields'])) {
+		if (is_array($options['fields'])) {
 			$options['fields'] = implode(',', $options['fields']);
 		}
 	}
