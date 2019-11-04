@@ -27,7 +27,7 @@ $client->initiateSession(
 
 Before Bullhorn authorizes API calls from a new user, the user is required to give consent. If no consent has been given yet the library will throw an IdentityException and the client will respond with an HTML representation of the consent form.
 
-To permanently fix this, visit the authorization URL with your credentials [auth.bullhornstaffing.com/oauth/authorize?response_type=code&action=Login&username=<username>&password=<password>&state=<client_secret>&approval_prompt=auto&client_id=<client_id>](https://auth.bullhornstaffing.com/oauth/authorize?response_type=code&action=Login&username=<username>&password=<password>&state=<client_secret>&approval_prompt=auto&client_id=<client_id>) while logged into bullhorn and press the **Agree** button. This will authorize your application to use the API under the user's name.
+To permanently fix this, visit the authorization URL with your credentials [auth.bullhornstaffing.com/oauth/authorize?response_type=code&action=Login&username=<username>&password=<password>&state=<client_secret>&approval_prompt=auto&client_id=<client_id>](https://auth.bullhornstaffing.com/oauth/authorize?response_type=code&action=Login&username=<username>&password=<password>&state=<client_secret>&approval_prompt=auto&client_id=<client_id>) while logged into bullhorn and press the **Agree** button. This will authorize your application to use the API in the user's name.
 
 ### Raw Requests
 Simple requests as documented in the Bullhorn API documentation can be run as:
