@@ -13,7 +13,7 @@
     ],
     "minimum-stability": "stable",
     "require": {
-        "jonathanraftery/bullhorn-auth-client": "v1.1.4",
+        "jonathanraftery/bullhorn-auth-client": "^1.1",
         "guzzlehttp/guzzle": "~6.0"
     },
     "require-dev": {
