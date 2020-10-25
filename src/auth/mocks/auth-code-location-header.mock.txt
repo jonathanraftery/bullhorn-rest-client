@@ -1,0 +1,1 @@
+http://www.bullhorn.com?code=mock-auth-code&client_id=mock-client-id&state=mock-state

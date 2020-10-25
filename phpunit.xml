@@ -2,7 +2,7 @@
 <phpunit
     backupGlobals="false"
     backupStaticAttributes="false"
-    bootstrap="./vendor/autoload.php"
+    bootstrap="./test-util/bootstrap-tests.php"
     colors="true"
     convertErrorsToExceptions="true"
     convertNoticesToExceptions="true"
@@ -11,8 +11,17 @@
     stopOnFailure="false"
 >
     <testsuites>
-        <testsuite name="BullhornRestClient tests">
-            <directory>./tests</directory>
+        <testsuite name="all-tests">
+            <directory>src</directory>
+        </testsuite>
+        <testsuite name="rest-tests">
+            <directory>src</directory>
+        </testsuite>
+        <testsuite name="auth-tests">
+            <directory>src/auth</directory>
+        </testsuite>
+        <testsuite name="unit-tests">
+            <directory>src</directory>
         </testsuite>
     </testsuites>
 </phpunit>

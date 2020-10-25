@@ -38,8 +38,7 @@ class EventSubscription extends Resource
         );
     }
 
-    function delete($subscriptionName)
-    {
+    function delete($subscriptionName) {
         return $this->restClient->request(
             'DELETE',
             self::BASE_URL . $subscriptionName

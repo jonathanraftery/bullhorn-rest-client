@@ -1,12 +1,13 @@
-<?php
+<?php namespace jonathanraftery\Bullhorn\Rest;
 
-namespace jonathanraftery\Bullhorn\Rest;
-use jonathanraftery\Bullhorn\Rest\Authentication\Client as AuthClient;
-use jonathanraftery\Bullhorn\Rest\Authentication\Exception\InvalidRefreshTokenException;
+use GuzzleHttp\Exception\ClientException;
+use jonathanraftery\Bullhorn\Rest\Authentication\AuthClient;
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\Promise;
 use GuzzleHttp\Psr7\Request as HttpRequest;
 use GuzzleHttp\Psr7\Uri;
+use jonathanraftery\Bullhorn\Rest\Authentication\AuthClientCollaboratorKey;
+use jonathanraftery\Bullhorn\Rest\Authentication\InvalidRefreshTokenException;
 
 class Client
 {
@@ -23,9 +24,9 @@ class Client
         $this->authClient = new AuthClient(
             $clientId,
             $clientSecret,
-            $dataStore
+            [AuthClientCollaboratorKey::DataStore => $dataStore]
         );
-        
+
         $defaultOptions = [
             'autoRefresh' => true,
             'maxSessionRetry' => 5
@@ -51,7 +52,7 @@ class Client
                     $options
                 );
                 $gotSession = true;
-            } catch (\GuzzleHttp\Exception\ClientException $e) {
+            } catch (ClientException $e) {
                 ++$tries;
                 if ($tries >= $this->options['maxSessionRetry'])
                     throw $e;
@@ -63,6 +64,10 @@ class Client
         ]);
     }
 
+    /**
+     * @param array $options
+     * @throws InvalidRefreshTokenException
+     */
     public function refreshSession(array $options = [])
     {
         $this->authClient->refreshSession($options);
@@ -97,7 +102,7 @@ class Client
         $method,
         $url,
         $options = [],
-        $headers = [] 
+        $headers = []
     ) {
         $fullHeaders = $this->appendDefaultHeadersTo($headers);
         $options['headers'] = $fullHeaders;
@@ -111,7 +116,7 @@ class Client
             $responseBody = $response->getBody()->getContents();
             return json_decode($responseBody);
         }
-        catch (\GuzzleHttp\Exception\ClientException $e) {
+        catch (ClientException $e) {
             if ($this->options['autoRefresh']) {
                 $request = [
                     'method' => $method,

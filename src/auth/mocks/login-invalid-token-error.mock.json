@@ -1,0 +1,5 @@
+{
+  "errorMessage": "Invalid or expired OAuth access token.",
+  "errorMessageKey": "errors.authentication.invalidOAuthToken",
+  "errorCode": 400
+}

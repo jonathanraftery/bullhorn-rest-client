@@ -1,0 +1,15 @@
+root = true
+
+[*]
+trim_trailing_whitespace = true
+insert_final_newline = true
+end_of_line = lf
+charset = utf-8
+tab_width = 4
+indent_style = space
+
+[*.php]
+indent_size = 4
+
+[*.json]
+indent_size = 2

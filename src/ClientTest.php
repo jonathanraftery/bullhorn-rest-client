@@ -1,32 +1,23 @@
 <?php
 
+use jonathanraftery\Bullhorn\Rest\Authentication\InvalidRefreshTokenException;
+use jonathanraftery\Bullhorn\Rest\Authentication\MemoryDataStore;
 use PHPUnit\Framework\TestCase;
 use jonathanraftery\Bullhorn\Rest\Client;
-use jonathanraftery\Bullhorn\Rest\Authentication\AuthorizationException;
-use jonathanraftery\Bullhorn\Rest\Authentication\Exception\InvalidRefreshTokenException;
-use jonathanraftery\Bullhorn\MemoryDataStore;
-use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
+use jonathanraftery\Bullhorn\Rest\Authentication\BullhornAuthException;
 
-final class ClientTest extends TestCase
-{
+final class ClientTest extends TestCase {
     protected $client;
-    protected $credentials;
 
-    protected function setUp()
-    {
-        $credentialsFileName = __DIR__.'/data/client-credentials.json';
-        $credentialsFile = fopen($credentialsFileName, 'r');
-        $credentialsJson = fread($credentialsFile, filesize($credentialsFileName));
-        $this->credentials = json_decode($credentialsJson, true);
-
+    protected function setUp(): void {
         $this->client = new Client(
-            $this->credentials['clientId'],
-            $this->credentials['clientSecret'],
+            $_ENV[TestEnvKeys::BullhornClientId],
+            $_ENV[TestEnvKeys::BullhornClientSecret],
             new MemoryDataStore()
         );
         $this->client->initiateSession(
-            $this->credentials['username'],
-            $this->credentials['password']
+            $_ENV[TestEnvKeys::BullhornUsername],
+            $_ENV[TestEnvKeys::BullhornPassword]
         );
     }
 
@@ -37,47 +28,47 @@ final class ClientTest extends TestCase
 
     function testThrowsExceptionOnInvalidClientId()
     {
-        $this->expectException(AuthorizationException::class);
+        $this->expectException(BullhornAuthException::class);
         $client = new Client(
             'testing_invalid_client_id',
-            $this->credentials['clientSecret'],
+            $_ENV[TestEnvKeys::BullhornClientSecret],
             new MemoryDataStore()
         );
         $client->initiateSession(
-            $this->credentials['username'],
-            $this->credentials['password']
+            $_ENV[TestEnvKeys::BullhornUsername],
+            $_ENV[TestEnvKeys::BullhornPassword]
         );
     }
 
     function testThrowsExceptionOnInvalidClientSecret()
     {
-        $this->expectException(AuthorizationException::class);
+        $this->expectException(BullhornAuthException::class);
         $client = new Client(
-            $this->credentials['clientId'],
+            $_ENV[TestEnvKeys::BullhornClientId],
             'testing_invalid_client_secret',
             new MemoryDataStore()
         );
         $client->initiateSession(
-            $this->credentials['username'],
-            $this->credentials['password']
+            $_ENV[TestEnvKeys::BullhornUsername],
+            $_ENV[TestEnvKeys::BullhornPassword]
         );
     }
 
     function testThrowsExceptionOnInvalidUsername()
     {
-        $this->expectException(AuthorizationException::class);
+        $this->expectException(BullhornAuthException::class);
         $this->client->initiateSession(
             'testing_invalid_username',
-            $this->credentials['password']
+            $_ENV[TestEnvKeys::BullhornPassword]
         );
-    
+
     }
-    
+
     function testThrowsExceptionOnInvalidPassword()
     {
-        $this->expectException(AuthorizationException::class);
+        $this->expectException(BullhornAuthException::class);
         $this->client->initiateSession(
-            $this->credentials['username'],
+            $_ENV[TestEnvKeys::BullhornUsername],
             'testing_invalid_password'
         );
     }
@@ -93,15 +84,15 @@ final class ClientTest extends TestCase
         $this->expectException(InvalidRefreshTokenException::class);
         $dataStore = new MemoryDataStore();
         $localClient = new Client(
-            $this->credentials['clientId'],
-            $this->credentials['clientSecret'],
+            $_ENV[TestEnvKeys::BullhornClientId],
+            $_ENV[TestEnvKeys::BullhornClientSecret],
             $dataStore
         );
         $localClient->initiateSession(
-            $this->credentials['username'],
-            $this->credentials['password']
+            $_ENV[TestEnvKeys::BullhornUsername],
+            $_ENV[TestEnvKeys::BullhornPassword]
         );
-        $dataKey = $this->credentials['clientId'] . '-refreshToken';
+        $dataKey = $_ENV[TestEnvKeys::BullhornClientId] . '-refreshToken';
         $dataStore->store($dataKey, 'invalid-refresh-token');
         $localClient->refreshSession();
     }
@@ -109,14 +100,14 @@ final class ClientTest extends TestCase
     function testPassingTtlOptionSetsTtl()
     {
         $localClient = new Client(
-            $this->credentials['clientId'],
-            $this->credentials['clientSecret'],
+            $_ENV[TestEnvKeys::BullhornClientId],
+            $_ENV[TestEnvKeys::BullhornClientSecret],
             new MemoryDataStore(),
             ['autoRefresh' => false]
         );
         $localClient->initiateSession(
-            $this->credentials['username'],
-            $this->credentials['password'],
+            $_ENV[TestEnvKeys::BullhornUsername],
+            $_ENV[TestEnvKeys::BullhornPassword],
             ['ttl' => 1]
         );
         sleep(70);
@@ -142,7 +133,7 @@ final class ClientTest extends TestCase
         $this->assertTrue($this->checkForValidResponse());
     }
 
-    function testEventSubscriptionCreate()
+    function test_itCreatesAndDeletesEventSubscriptions()
     {
         $subscriptionName = 'TestSubscription';
         $response = $this->client->EventSubscription->create(
@@ -151,35 +142,8 @@ final class ClientTest extends TestCase
             'INSERTED,UPDATED,DELETED'
         );
         $this->assertTrue(isset($response->createdOn));
-        return $subscriptionName;
-    }
-
-    /**
-     * @depends testEventSubscriptionCreate
-     */
-    function testEventSubscriptionGet($subscriptionName)
-    {
-        $this->assertTrue(true);
-        return $subscriptionName;
-    }
-
-    /**
-     * @depends testEventSubscriptionGet
-     */
-    function testEventSubscriptionDelete($subscriptionName)
-    {
-        $response = $this->client->EventSubscription->delete($subscriptionName);
-        $expectedResult = 1;
-        $this->assertEquals($response->result, $expectedResult);
-    }
-
-    /**
-     * @group new
-     */
-    function testJobOrders()
-    {
-        $jobs = $this->client->JobOrders->search('isOpen:1 AND isPublic:1 AND isDeleted:0', ['*']);
-        print(count($jobs));
+        $response = $this->client->EventSubscription->delete('TestSubscription');
+        $this->assertEquals(1, $response->result);
     }
 
     private function checkForValidResponse()
@@ -191,8 +155,8 @@ final class ClientTest extends TestCase
     private function checkedClientRefresh(array $options = [])
     {
         $this->client->refreshOrInitiateSession(
-            $this->credentials['username'],
-            $this->credentials['password'],
+            $_ENV[TestEnvKeys::BullhornUsername],
+            $_ENV[TestEnvKeys::BullhornPassword],
             $options
         );
     }
