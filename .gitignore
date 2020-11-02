@@ -3,3 +3,4 @@ local/
 .idea
 composer.lock
 .phpunit.result.cache
+bullhorn-auth-store.json

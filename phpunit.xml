@@ -2,7 +2,7 @@
 <phpunit
     backupGlobals="false"
     backupStaticAttributes="false"
-    bootstrap="./test-util/bootstrap-tests.php"
+    bootstrap="./tests/bootstrap.php"
     colors="true"
     convertErrorsToExceptions="true"
     convertNoticesToExceptions="true"
@@ -11,17 +11,14 @@
     stopOnFailure="false"
 >
     <testsuites>
-        <testsuite name="all-tests">
-            <directory>src</directory>
+        <testsuite name="all">
+            <directory>tests</directory>
         </testsuite>
-        <testsuite name="rest-tests">
-            <directory>src</directory>
+        <testsuite name="unit">
+            <directory>tests/Unit</directory>
         </testsuite>
-        <testsuite name="auth-tests">
-            <directory>src/auth</directory>
-        </testsuite>
-        <testsuite name="unit-tests">
-            <directory>src</directory>
+        <testsuite name="integration">
+            <directory>tests/Integration</directory>
         </testsuite>
     </testsuites>
 </phpunit>

@@ -11,7 +11,7 @@ $ composer require jonathanraftery/bullhorn-rest-client
 
 ## Usage
 ```php
-use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
+use jonathanraftery\Bullhorn\Rest\Exception\exceptions\exceptions\exceptions\Client as BullhornClient;
 
 $client = new BullhornClient(
     'client-id',
@@ -41,7 +41,7 @@ $response = $client->request(
 ### PUT/POST Requests
 The client uses [GuzzleHTTP](http://docs.guzzlephp.org/en/stable/) for requests, and the parameters to the request method match those to create a request object in Guzzle. The third parameter is the request options, as described in the [Guzzle documentation](http://docs.guzzlephp.org/en/stable/request-options.html).
 
-To set the body of a PUT/POST request, set the "body" option of the request to the JSON content of the request body such as: 
+To set the body of a PUT/POST request, set the "body" option of the request to the JSON content of the request body such as:
 ```php
 $response = $client->request(
     'PUT',

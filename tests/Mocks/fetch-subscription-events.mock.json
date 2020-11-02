@@ -1,0 +1,16 @@
+{
+  "requestId": 1,
+  "events": [
+    {
+      "eventId": "ID:JBM-115185723",
+      "eventType": "ENTITY",
+      "eventTimestamp": 1603943638848,
+      "eventMetadata": {
+        "PERSON_ID": "123456"
+      },
+      "entityName": "Candidate",
+      "entityId": 422211,
+      "entityEventType": "INSERTED"
+    }
+  ]
+}

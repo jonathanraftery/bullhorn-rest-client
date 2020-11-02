@@ -1,0 +1,6 @@
+{
+  "subscriptionId": "mock-subscription",
+  "jmsSelector": "JMSType='ENTITY' AND BhCorpId=1234 AND BhEntityName='JobOrder' AND BhEntityEventType='INSERTED'",
+  "lastRequestId": 0,
+  "createdOn": 1603915236771
+}

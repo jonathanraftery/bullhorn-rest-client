@@ -18,12 +18,14 @@
   "minimum-stability": "stable",
   "scripts": {
     "test": "phpunit",
-    "test:unit": "phpunit --group unit",
-    "test:integration": "phpunit --group integration",
-    "test:rest": "phpunit --testsuite rest-tests",
-    "test:auth": "phpunit --testsuite auth-tests",
-    "test:auth:unit": "phpunit --testsuite auth-tests --group unit",
-    "test:auth:integration": "phpunit --testsuite auth-tests --group integration"
+    "test:unit": "phpunit --testsuite unit",
+    "test:integration": "phpunit --testsuite integration",
+    "test:rest": "phpunit --group rest",
+    "test:rest:unit": "phpunit --testsuite unit --group rest",
+    "test:rest:integration": "phpunit --testsuite integration --group rest",
+    "test:auth": "phpunit --group auth",
+    "test:auth:unit": "phpunit --testsuite unit --group auth",
+    "test:auth:integration": "phpunit --testsuite integration --group auth"
   },
   "require": {
     "php": "^7.3",
@@ -36,11 +38,13 @@
     "vlucas/phpdotenv": "^5.2"
   },
   "autoload": {
-    "classmap": [
-      "src/"
-    ],
     "psr-4": {
-      "jonathanraftery\\Bullhorn\\REST\\Client\\": "src/Client.php"
+      "jonathanraftery\\Bullhorn\\Rest\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "jonathanraftery\\Bullhorn\\Rest\\Tests\\": "tests"
     }
   }
 }
