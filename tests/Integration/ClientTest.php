@@ -42,71 +42,6 @@ final class ClientTest extends TestCase {
     }
 
     /**
-     * @throws BullhornClientException
-     */
-    function test_itMakesRawRequests() {
-        $result = $this->client->rawRequest('GET', 'entity/CorporateUser/1', [
-            'query' => ['fields' => 'id'],
-        ]);
-        $this->assertNotNull($result->getBody()->getContents());
-    }
-
-    /**
-     * @throws BullhornClientException
-     */
-    function test_itFetchesEntities() {
-        $result = $this->client->fetchEntities(BullhornEntities::JobOrder, [1,2,3], [
-            'fields' => 'id',
-        ]);
-        $this->assertGreaterThan(0, count($result));
-    }
-
-    /**
-     * @throws BullhornClientException
-     */
-    function test_itCreatesAndDeletesEntities() {
-        $testName = 'Test Candidate';
-        $createResult = $this->client->createEntity(BullhornEntities::Candidate, [
-            'firstName' => $testName,
-        ]);
-        $this->assertEquals('INSERT', $createResult->changeType);
-        $this->assertNotNull($createResult->changedEntityId);
-        $this->assertEquals($testName, $createResult->data->firstName);
-        $deleteResult = $this->client->deleteEntity(BullhornEntities::Candidate, $createResult->changedEntityId);
-        $this->assertEquals('DELETE', $deleteResult->changeType);
-        $this->assertEquals($createResult->changedEntityId, $deleteResult->changedEntityId);
-    }
-
-    /**
-     * @throws BullhornClientException
-     */
-    function test_itCreatesAndDeletesEventSubscriptions() {
-        $subscriptionName = 'test-subscription';
-        $createResult = $this->client->createEventSubscription($subscriptionName, [BullhornEntities::JobOrder], [EventTypes::Created]);
-        $this->assertTrue(isset($createResult->createdOn));
-        $deleteResult = $this->client->deleteEventSubscription($subscriptionName);
-        $this->assertTrue($deleteResult->result);
-    }
-
-    /**
-     * @throws BullhornClientException
-     */
-    function test_itFetchesEventSubscriptionEvents() {
-        $subscriptionName = 'test-subscription';
-        $this->client->createEventSubscription($subscriptionName, [BullhornEntities::Candidate], [EventTypes::Created]);
-        $createdTestCandidate = $this->client->createEntity(BullhornEntities::Candidate, [
-            'firstName' => 'Test Candidate',
-        ]);
-
-        $result = $this->client->fetchEventSubscriptionEvents($subscriptionName);
-        $this->assertEquals(BullhornEntities::Candidate, $result->events[0]->entityName);
-        $this->assertEquals($createdTestCandidate->changedEntityId, $result->events[0]->entityId);
-
-        $this->client->deleteEventSubscription($subscriptionName);
-        $this->client->deleteEntity(BullhornEntities::Candidate, $createdTestCandidate->changedEntityId);
-    }
-
-    /**
      * @throws BullhornAuthException
      * @throws CreateSessionException
      * @throws InvalidRefreshTokenException
@@ -175,5 +110,81 @@ final class ClientTest extends TestCase {
             'fields' => 'id',
         ]);
         $this->assertEquals(1, $result->id);
+    }
+
+    /**
+     * @throws BullhornClientException
+     */
+    function test_itMakesRawRequests() {
+        $result = $this->client->rawRequest('GET', 'entity/CorporateUser/1', [
+            'query' => ['fields' => 'id'],
+        ]);
+        $this->assertNotNull($result->getBody()->getContents());
+    }
+
+    /**
+     * @throws BullhornClientException
+     */
+    function test_itFetchesEntities() {
+        $result = $this->client->fetchEntities(BullhornEntities::JobOrder, [1,2,3], [
+            'fields' => 'id',
+        ]);
+        $this->assertGreaterThan(0, count($result));
+    }
+
+    /**
+     * @throws BullhornClientException
+     */
+    function test_itCreatesAndDeletesEntities() {
+        $testName = 'Test Candidate';
+        $createResult = $this->client->createEntity(BullhornEntities::Candidate, [
+            'firstName' => $testName,
+        ]);
+        $this->assertEquals('INSERT', $createResult->changeType);
+        $this->assertNotNull($createResult->changedEntityId);
+        $this->assertEquals($testName, $createResult->data->firstName);
+        $deleteResult = $this->client->deleteEntity(BullhornEntities::Candidate, $createResult->changedEntityId);
+        $this->assertEquals('DELETE', $deleteResult->changeType);
+        $this->assertEquals($createResult->changedEntityId, $deleteResult->changedEntityId);
+    }
+
+    /**
+     * @throws BullhornClientException
+     */
+    function test_itCreatesAndDeletesEventSubscriptions() {
+        $subscriptionName = 'test-subscription';
+        $createResult = $this->client->createEventSubscription($subscriptionName, [BullhornEntities::JobOrder], [EventTypes::Created]);
+        $this->assertTrue(isset($createResult->createdOn));
+        $deleteResult = $this->client->deleteEventSubscription($subscriptionName);
+        $this->assertTrue($deleteResult->result);
+    }
+
+    /**
+     * @throws BullhornClientException
+     */
+    function test_itFetchesEventSubscriptionEvents() {
+        $subscriptionName = 'test-subscription';
+        $this->client->createEventSubscription($subscriptionName, [BullhornEntities::Candidate], [EventTypes::Created]);
+        $createdTestCandidate = $this->client->createEntity(BullhornEntities::Candidate, [
+            'firstName' => 'Test Candidate',
+        ]);
+
+        $result = $this->client->fetchEventSubscriptionEvents($subscriptionName);
+        $this->assertEquals(BullhornEntities::Candidate, $result->events[0]->entityName);
+        $this->assertEquals($createdTestCandidate->changedEntityId, $result->events[0]->entityId);
+
+        $this->client->deleteEventSubscription($subscriptionName);
+        $this->client->deleteEntity(BullhornEntities::Candidate, $createdTestCandidate->changedEntityId);
+    }
+
+    /**
+     * @throws HttpException
+     */
+    function test_itSearchesEntities() {
+        $result = $this->client->searchEntities(BullhornEntities::Candidate, 'isDeleted:0', [
+            'count' => 3,
+            'fields' => 'id',
+        ]);
+        $this->assertNotNull($result->data[0]->id);
     }
 }

@@ -41,7 +41,7 @@ class Client
      * @throws Auth\Exception\InvalidConfigException
      * @throws Auth\Exception\BullhornAuthException
      */
-    public function __construct(array $options = []) {
+    function __construct(array $options = []) {
         if (array_key_exists(ClientOptions::AuthDataStore, $options)
             && array_key_exists(ClientOptions::AuthClient, $options)
         ) {
@@ -132,7 +132,7 @@ class Client
      * @param array $options
      * @throws Auth\Exception\BullhornAuthException
      */
-    public function initiateSession(array $options = []) {
+    function initiateSession(array $options = []) {
         $gotSession = false;
         $tries = 0;
         do {
@@ -156,7 +156,7 @@ class Client
      * @throws Auth\Exception\RestLoginException
      * @throws Auth\Exception\InvalidRefreshTokenException
      */
-    public function refreshSession(array $options = []) {
+    function refreshSession(array $options = []) {
         $this->authClient->refreshSession($options);
         $this->setupHttpClient();
     }
@@ -165,7 +165,7 @@ class Client
      * Returns if the client's current REST session is valid
      * @return bool
      */
-    public function sessionIsValid() {
+    function sessionIsValid() {
         return $this->authClient->sessionIsValid();
     }
 
@@ -175,7 +175,7 @@ class Client
      * @throws Auth\Exception\CreateSessionException
      * @throws Auth\Exception\RestLoginException
      */
-    public function refreshOrInitiateSession(array $options = []) {
+    function refreshOrInitiateSession(array $options = []) {
         try {
             $this->refreshSession($options);
         }
@@ -190,15 +190,10 @@ class Client
      * @param string $url
      * @param array $options
      * @return ResponseInterface
-     * @throws HttpException
+     * @throws GuzzleException
      */
-    public function rawRequest(string $method, string $url, $options = []) {
-//        try {
-            return $this->httpClient->request($method, $url, $options);
-//        }
-//        catch (GuzzleException $e) {
-//            throw new HttpException($e);
-//        }
+    function rawRequest(string $method, string $url, $options = []) {
+        return $this->httpClient->request($method, $url, $options);
     }
 
     /**
@@ -208,7 +203,7 @@ class Client
      * @return mixed
      * @throws HttpException
      */
-    public function createEntity(string $entityType, array $entityProps) {
+    function createEntity(string $entityType, array $entityProps) {
         try {
             $response = $this->httpClient->put("entity/$entityType", [
                 'body' => json_encode((object)$entityProps),
@@ -227,7 +222,7 @@ class Client
      * @return mixed
      * @throws HttpException
      */
-    public function deleteEntity(string $entityType, int $entityId) {
+    function deleteEntity(string $entityType, int $entityId) {
         try {
             $response = $this->httpClient->delete("entity/$entityType/$entityId");
             $body = $response->getBody()->getContents();
@@ -246,7 +241,7 @@ class Client
      * @return mixed
      * @throws HttpException
      */
-    public function fetchEntities(string $entityType, array $entityIds, array $params = []) {
+    function fetchEntities(string $entityType, array $entityIds, array $params = []) {
         try {
             $joinedIds = implode(',', $entityIds);
             $response = $this->httpClient->get("entity/{$entityType}/{$joinedIds}", [
@@ -260,6 +255,26 @@ class Client
     }
 
     /**
+     * Searches entities
+     * @param string $entityType
+     * @param string $luceneQuery
+     * @param array $params
+     * @return mixed
+     * @throws HttpException
+     */
+    function searchEntities(string $entityType, string $luceneQuery, array $params = []) {
+        try {
+            $response = $this->httpClient->get("search/$entityType", [
+                'query' => array_merge($params, ['query' => $luceneQuery]),
+            ]);
+            $response->getBody()->rewind();
+            return json_decode($response->getBody()->getContents());
+        } catch (GuzzleException $e) {
+            throw new HttpException($e);
+        }
+    }
+
+    /**
      * Creates an event subscription
      * @param string $subscriptionName
      * @param array $entityTypes
@@ -267,7 +282,7 @@ class Client
      * @return mixed
      * @throws HttpException
      */
-    public function createEventSubscription(string $subscriptionName, array $entityTypes, array $eventTypes) {
+    function createEventSubscription(string $subscriptionName, array $entityTypes, array $eventTypes) {
         try {
             $response = $this->httpClient->put("event/subscription/$subscriptionName", [
                 'query' => [
@@ -289,7 +304,7 @@ class Client
      * @return mixed
      * @throws HttpException
      */
-    public function deleteEventSubscription(string $subscriptionName) {
+    function deleteEventSubscription(string $subscriptionName) {
         try {
             $response = $this->httpClient->delete("event/subscription/$subscriptionName");
             return json_decode($response->getBody()->getContents());
@@ -307,7 +322,7 @@ class Client
      * @return mixed
      * @throws HttpException
      */
-    public function fetchEventSubscriptionEvents(string $subscriptionName, int $maxEvents = 100, ?int $requestId = null) {
+    function fetchEventSubscriptionEvents(string $subscriptionName, int $maxEvents = 100, ?int $requestId = null) {
         try {
             $response = $this->httpClient->get("event/subscription/$subscriptionName", [
                 'query' => [

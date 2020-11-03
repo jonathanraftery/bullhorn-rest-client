@@ -1,0 +1,397 @@
+{
+  "total": 123456,
+  "start": 0,
+  "count": 1,
+  "data": [
+    {
+      "id": 111111,
+      "activePlacements": {
+        "total": 0,
+        "data": []
+      },
+      "address": {
+        "address1": "Fake St",
+        "address2": null,
+        "city": "Omaha",
+        "state": "NE",
+        "zip": "68123",
+        "countryID": 1,
+        "countryName": "United States",
+        "countryCode": "US"
+      },
+      "branch": null,
+      "businessSectors": {
+        "total": 0,
+        "data": []
+      },
+      "canEnterTime": false,
+      "candidateSource": null,
+      "categories": {
+        "total": 1,
+        "data": []
+      },
+      "category": {
+        "id": 123456,
+        "name": "ARRT-R"
+      },
+      "certificationList": {
+        "total": 0,
+        "data": []
+      },
+      "certifications": null,
+      "clientCorporationBlackList": {
+        "total": 0,
+        "data": []
+      },
+      "clientCorporationWhiteList": {
+        "total": 0,
+        "data": []
+      },
+      "comments": "Not Contacted",
+      "companyName": null,
+      "companyURL": null,
+      "customDate1": null,
+      "customDate10": null,
+      "customDate11": null,
+      "customDate12": null,
+      "customDate13": null,
+      "customDate2": null,
+      "customDate3": null,
+      "customDate4": null,
+      "customDate5": null,
+      "customDate6": null,
+      "customDate7": null,
+      "customDate8": null,
+      "customDate9": null,
+      "customEncryptedText1": null,
+      "customEncryptedText10": null,
+      "customEncryptedText2": null,
+      "customEncryptedText3": null,
+      "customEncryptedText4": null,
+      "customEncryptedText5": null,
+      "customEncryptedText6": null,
+      "customEncryptedText7": null,
+      "customEncryptedText8": null,
+      "customEncryptedText9": null,
+      "customFloat1": null,
+      "customFloat10": null,
+      "customFloat11": null,
+      "customFloat12": null,
+      "customFloat13": null,
+      "customFloat14": null,
+      "customFloat15": null,
+      "customFloat16": null,
+      "customFloat17": null,
+      "customFloat18": null,
+      "customFloat19": null,
+      "customFloat2": null,
+      "customFloat20": null,
+      "customFloat21": null,
+      "customFloat22": null,
+      "customFloat23": null,
+      "customFloat3": null,
+      "customFloat4": null,
+      "customFloat5": null,
+      "customFloat6": null,
+      "customFloat7": null,
+      "customFloat8": null,
+      "customFloat9": null,
+      "customInt1": null,
+      "customInt10": null,
+      "customInt11": null,
+      "customInt12": null,
+      "customInt13": null,
+      "customInt14": null,
+      "customInt15": null,
+      "customInt16": null,
+      "customInt17": null,
+      "customInt18": null,
+      "customInt19": null,
+      "customInt2": null,
+      "customInt20": null,
+      "customInt21": null,
+      "customInt22": null,
+      "customInt23": null,
+      "customInt3": null,
+      "customInt4": null,
+      "customInt5": null,
+      "customInt6": null,
+      "customInt7": null,
+      "customInt8": null,
+      "customInt9": null,
+      "customObject3s": {
+        "total": 0,
+        "data": []
+      },
+      "customObject4s": {
+        "total": 0,
+        "data": []
+      },
+      "customObject5s": {
+        "total": 0,
+        "data": []
+      },
+      "customObject7s": {
+        "total": 0,
+        "data": []
+      },
+      "customText1": null,
+      "customText10": null,
+      "customText11": null,
+      "customText12": null,
+      "customText13": null,
+      "customText14": null,
+      "customText15": null,
+      "customText16": null,
+      "customText17": null,
+      "customText18": null,
+      "customText19": null,
+      "customText2": null,
+      "customText20": null,
+      "customText21": null,
+      "customText22": null,
+      "customText23": null,
+      "customText24": null,
+      "customText25": null,
+      "customText26": null,
+      "customText27": null,
+      "customText28": null,
+      "customText29": null,
+      "customText3": null,
+      "customText30": null,
+      "customText31": null,
+      "customText32": null,
+      "customText33": null,
+      "customText34": null,
+      "customText35": null,
+      "customText36": null,
+      "customText37": null,
+      "customText38": null,
+      "customText39": null,
+      "customText4": null,
+      "customText40": null,
+      "customText5": null,
+      "customText6": null,
+      "customText7": null,
+      "customText8": null,
+      "customText9": null,
+      "customTextBlock1": null,
+      "customTextBlock10": null,
+      "customTextBlock2": null,
+      "customTextBlock3": null,
+      "customTextBlock4": null,
+      "customTextBlock5": null,
+      "customTextBlock6": null,
+      "customTextBlock7": null,
+      "customTextBlock8": null,
+      "customTextBlock9": null,
+      "dateAdded": 1490328828267,
+      "dateAvailable": null,
+      "dateAvailableEnd": null,
+      "dateI9Expiration": null,
+      "dateLastComment": 1541354244133,
+      "dateLastModified": 1541354298467,
+      "dateNextCall": null,
+      "dateOfBirth": null,
+      "dayRate": 0.0000,
+      "dayRateLow": null,
+      "degreeList": null,
+      "description": null,
+      "desiredLocations": null,
+      "disability": null,
+      "educationDegree": null,
+      "educations": {
+        "total": 0,
+        "data": []
+      },
+      "email": "candidate@email.com",
+      "email2": null,
+      "email3": null,
+      "employeeType": "",
+      "employmentPreference": [
+        "Permanent"
+      ],
+      "estaffGUID": null,
+      "ethnicity": null,
+      "experience": 1,
+      "externalID": null,
+      "fax": null,
+      "fax2": null,
+      "fax3": null,
+      "federalAddtionalWitholdingsAmount": null,
+      "federalExemptions": null,
+      "federalExtraWithholdingAmount": null,
+      "federalFilingStatus": null,
+      "fileAttachments": {
+        "total": 1,
+        "data": []
+      },
+      "firstName": "Firstname",
+      "gender": null,
+      "hourlyRate": 0.0000,
+      "hourlyRateLow": null,
+      "i9OnFile": null,
+      "interviews": {
+        "total": 0,
+        "data": []
+      },
+      "isAnonymized": false,
+      "isDayLightSavings": true,
+      "isDeleted": false,
+      "isEditable": true,
+      "isExempt": null,
+      "isLockedOut": false,
+      "lastName": "Lastname",
+      "leads": {
+        "total": 0,
+        "data": []
+      },
+      "linkedPerson": null,
+      "localAddtionalWitholdingsAmount": null,
+      "localExemptions": null,
+      "localFilingStatus": null,
+      "localTaxCode": null,
+      "locations": {
+        "total": 0,
+        "data": []
+      },
+      "maritalStatus": null,
+      "massMailOptOut": false,
+      "masterUserID": null,
+      "middleName": null,
+      "migrateGUID": null,
+      "mobile": "1231231234",
+      "name": "Firstname Lastname",
+      "namePrefix": null,
+      "nameSuffix": null,
+      "nickName": "Nickname",
+      "notes": {
+        "total": 33,
+        "data": []
+      },
+      "numCategories": 0,
+      "numOwners": 0,
+      "occupation": null,
+      "onboardingDocumentReceivedCount": 0,
+      "onboardingDocumentSentCount": 0,
+      "onboardingPercentComplete": 0,
+      "onboardingReceivedSent": {
+        "onboardingDocumentReceivedCount": 0,
+        "onboardingDocumentSentCount": 0
+      },
+      "onboardingStatus": null,
+      "otherDeductionsAmount": null,
+      "otherIncomeAmount": null,
+      "owner": {
+        "id": 12345,
+        "firstName": "Firstname",
+        "lastName": "Lastname"
+      },
+      "pager": null,
+      "paperWorkOnFile": null,
+      "password": "password",
+      "payrollClientStartDate": null,
+      "payrollStatus": null,
+      "personSubtype": "Candidate",
+      "phone": null,
+      "phone2": null,
+      "phone3": null,
+      "placements": {
+        "total": 0,
+        "data": []
+      },
+      "preferredContact": "Phone",
+      "primarySkills": {
+        "total": 0,
+        "data": []
+      },
+      "recentClientList": null,
+      "references": {
+        "total": 0,
+        "data": []
+      },
+      "referredBy": null,
+      "referredByPerson": null,
+      "salary": 0.0000,
+      "salaryLow": null,
+      "secondaryAddress": {
+        "address1": null,
+        "address2": null,
+        "city": null,
+        "state": null,
+        "zip": null,
+        "countryID": 1,
+        "countryName": "United States",
+        "countryCode": "US"
+      },
+      "secondaryOwners": {
+        "total": 0,
+        "data": []
+      },
+      "secondarySkills": {
+        "total": 0,
+        "data": []
+      },
+      "sendouts": {
+        "total": 0,
+        "data": []
+      },
+      "shifts": {
+        "total": 0,
+        "data": []
+      },
+      "skillSet": null,
+      "source": [
+        "Other"
+      ],
+      "specialties": {
+        "total": 1,
+        "data": []
+      },
+      "ssn": null,
+      "stateAddtionalWitholdingsAmount": null,
+      "stateExemptions": null,
+      "stateFilingStatus": null,
+      "status": [
+        "Do not Call"
+      ],
+      "submissions": {
+        "total": 0,
+        "data": []
+      },
+      "tasks": {
+        "total": 2,
+        "data": []
+      },
+      "taxID": null,
+      "taxState": null,
+      "tearsheets": {
+        "total": 0,
+        "data": []
+      },
+      "timeZoneOffsetEST": 0,
+      "tobaccoUser": null,
+      "totalDependentClaimAmount": null,
+      "travelLimit": 0,
+      "travelMethod": null,
+      "twoJobs": null,
+      "type": null,
+      "userDateAdded": 1490328828267,
+      "userType": null,
+      "username": "_2065736488",
+      "veteran": null,
+      "webResponses": {
+        "total": 1,
+        "data": []
+      },
+      "willRelocate": false,
+      "workAuthorized": true,
+      "workHistories": {
+        "total": 0,
+        "data": []
+      },
+      "workPhone": null,
+      "_score": 1.0
+    }
+  ]
+}

@@ -4,14 +4,13 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
-use jonathanraftery\Bullhorn\Rest\Auth\AuthClient;
-use jonathanraftery\Bullhorn\Rest\Auth\AuthClientOptions;
 use jonathanraftery\Bullhorn\Rest\Auth\Exception\BullhornAuthException;
 use jonathanraftery\Bullhorn\Rest\Auth\Store\MemoryDataStore;
 use jonathanraftery\Bullhorn\Rest\BullhornEntities;
 use jonathanraftery\Bullhorn\Rest\Client;
 use jonathanraftery\Bullhorn\Rest\ClientOptions;
 use jonathanraftery\Bullhorn\Rest\Exception\BullhornClientException;
+use jonathanraftery\Bullhorn\Rest\Exception\HttpException;
 use jonathanraftery\Bullhorn\Rest\Exception\InvalidConfigException;
 use jonathanraftery\Bullhorn\Rest\Tests\Mocks\FakeCredentialsProvider;
 use jonathanraftery\Bullhorn\Rest\Tests\Mocks\MockAuthClient;
@@ -28,7 +27,7 @@ final class ClientTest extends TestCase {
 
     /**
      * @throws InvalidConfigException
-     * @throws \jonathanraftery\Bullhorn\Rest\Auth\Exception\InvalidConfigException
+     * @throws \jonathanraftery\Bullhorn\Rest\Auth\Exception\InvalidConfigException|BullhornAuthException
      */
     protected function setUp(): void {
         parent::setUp();
@@ -44,6 +43,30 @@ final class ClientTest extends TestCase {
                     'handler' => $handlerStack,
                 ]);
             }
+        ]);
+    }
+
+    /**
+     * @throws InvalidConfigException
+     * @throws \jonathanraftery\Bullhorn\Rest\Auth\Exception\InvalidConfigException|BullhornAuthException
+     */
+    function test_ifAuthClientAndDataStoreOptionsSupplied_throwsException() {
+        $this->expectException(InvalidConfigException::class);
+        new Client([
+            ClientOptions::AuthDataStore => new MemoryDataStore(),
+            ClientOptions::AuthClient => new MockAuthClient(),
+        ]);
+    }
+
+    /**
+     * @throws InvalidConfigException
+     * @throws \jonathanraftery\Bullhorn\Rest\Auth\Exception\InvalidConfigException|BullhornAuthException
+     */
+    function test_itThrowsExceptionIfAuthClientAndCredentialsProviderOptionsProvided() {
+        $this->expectException(InvalidConfigException::class);
+        new Client([
+            ClientOptions::CredentialsProvider => new FakeCredentialsProvider(),
+            ClientOptions::AuthClient => new MockAuthClient(),
         ]);
     }
 
@@ -71,26 +94,16 @@ final class ClientTest extends TestCase {
     }
 
     /**
-     * @throws InvalidConfigException
-     * @throws \jonathanraftery\Bullhorn\Rest\Auth\Exception\InvalidConfigException
+     * @throws HttpException
      */
-    function test_ifAuthClientAndDataStoreOptionsSupplied_throwsException() {
-        $this->expectException(InvalidConfigException::class);
-        new Client([
-            ClientOptions::AuthDataStore => new MemoryDataStore(),
-            ClientOptions::AuthClient => new MockAuthClient(),
+    function test_itSearchesEntities() {
+        $this->mockHttpHandler->append(
+            new Response(200, [], file_get_contents(__DIR__ . '/../Mocks/search-candidates.mock.json'))
+        );
+        $result = $this->client->searchEntities(BullhornEntities::Candidate, 'isDeleted:0', [
+            'fields' => 'id',
+            'count' => 1
         ]);
-    }
-
-    /**
-     * @throws InvalidConfigException
-     * @throws \jonathanraftery\Bullhorn\Rest\Auth\Exception\InvalidConfigException
-     */
-    function test_itThrowsExceptionIfAuthClientAndCredentialsProviderOptionsProvided() {
-        $this->expectException(InvalidConfigException::class);
-        new Client([
-            ClientOptions::CredentialsProvider => new FakeCredentialsProvider(),
-            ClientOptions::AuthClient => new MockAuthClient(),
-        ]);
+        $this->assertNotNull($result->data[0]->id);
     }
 }
