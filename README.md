@@ -1,7 +1,5 @@
 # Bullhorn REST Client
 
-**Currently in beta status.**
-
 Provides a simple client for the Bullhorn REST API.
 
 ## Installation
@@ -11,20 +9,17 @@ $ composer require jonathanraftery/bullhorn-rest-client
 
 ## Usage
 ```php
-use jonathanraftery\Bullhorn\Rest\Exception\exceptions\exceptions\exceptions\Client as BullhornClient;
-
-$client = new BullhornClient(
-    'client-id',
-    'client-secret'
-);
-$client->initiateSession(
-    'username',
-    'password'
-);
+use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
+$client = new BullhornClient();
 ```
 
-### Initial OAuth consent
+By default, the client will look for credentials in environment variables:
+- BULLHORN_CLIENT_ID
+- BULLHORN_CLIENT_SECRET
+- BULLHORN_USERNAME
+- BULLHORN_PASSWORD
 
+### Initial OAuth consent
 Before Bullhorn authorizes API calls from a new user, the user is required to give consent. If no consent has been given yet the library will throw an IdentityException and the client will respond with an HTML representation of the consent form.
 
 To permanently fix this, visit the authorization URL with your credentials [auth.bullhornstaffing.com/oauth/authorize?response_type=code&action=Login&username=<username>&password=<password>&state=<client_secret>&approval_prompt=auto&client_id=<client_id>](https://auth.bullhornstaffing.com/oauth/authorize?response_type=code&action=Login&username=<username>&password=<password>&state=<client_secret>&approval_prompt=auto&client_id=<client_id>) while logged into bullhorn and press the **Agree** button. This will authorize your application to use the API in the user's name.
@@ -32,9 +27,14 @@ To permanently fix this, visit the authorization URL with your credentials [auth
 ### Raw Requests
 Simple requests as documented in the Bullhorn API documentation can be run as:
 ```php
-$response = $client->request(
+use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
+$client = new BullhornClient();
+$response = $client->rawRequest(
     'GET',
-    'search/JobOrder?query=id:7777'
+    'search/JobOrder',
+    [
+        'query' => 'id:1234'
+    ]
 );
 ```
 
@@ -43,7 +43,9 @@ The client uses [GuzzleHTTP](http://docs.guzzlephp.org/en/stable/) for requests,
 
 To set the body of a PUT/POST request, set the "body" option of the request to the JSON content of the request body such as:
 ```php
-$response = $client->request(
+use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
+$client = new BullhornClient();
+$response = $client->rawRequest(
     'PUT',
     'entity/Candidate',
     [
@@ -52,19 +54,38 @@ $response = $client->request(
 );
 ```
 
-### Entity Requests
-More complex requests can be used for specific entities. The following will retrieve all job orders matching isDeleted:false.
-
-If there are more job orders than Bullhorn will return in one request, the client will automatically make multiple requests and return the concatenated array of all job orders.
+### Entity Operations
+Entities can be fetched, created, and deleted
 ```php
-$luceneConditions = 'isDeleted:false';
-$fields = ['id','name','dateAdded']; // ['*'] = all fields, default is ['id']
-$jobOrders = $client->JobOrders->search($luceneConditions, $fields);
+use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
+use jonathanraftery\Bullhorn\Rest\BullhornEntities;
+$client = new BullhornClient();
+$fetchedJobOrders = $client->fetchEntities(BullhornEntities::JobOrder, [1,2,3], [
+    'fields' => 'id',
+]);
+$createdJobOrder = $client->createEntity(BullhornEntities::JobOrder, [
+    'propName' => 'value',
+    'propName2' => 'value',
+]);
+$deleteId = 1;
+$client->deleteEntity(BullhornEntities::JobOrder, $deleteId);
 ```
-Currently, only job order entities are supported. The Resources/JobOrders class can be used as a reference of how to create others.
 
-### Session Timeoutes
+### Event Subscriptions
+```php
+use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
+use jonathanraftery\Bullhorn\Rest\BullhornEntities;
+use jonathanraftery\Bullhorn\Rest\EventTypes;
+$client = new BullhornClient();
+$client->createEventSubscription('SubscriptionName', [BullhornEntities::JobOrder], [EventTypes::Created]);
+$client->fetchEventSubscriptionEvents('SubscriptionName');
+$client->deleteEventSubscription('SubscriptionName');
+```
+
+### Session Timeouts
 Session will automatically refresh if expiration detected, or can be refreshed manually (shown with optional parameters)
 ```php
+use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
+$client = new BullhornClient();
 $client->refreshSession(['ttl' => 60]);
 ```

@@ -39,8 +39,9 @@ class Client
      * @param array $options
      * @throws InvalidConfigException
      * @throws Auth\Exception\InvalidConfigException
+     * @throws Auth\Exception\BullhornAuthException
      */
-    public function __construct(array $options) {
+    public function __construct(array $options = []) {
         if (array_key_exists(ClientOptions::AuthDataStore, $options)
             && array_key_exists(ClientOptions::AuthClient, $options)
         ) {
@@ -107,6 +108,8 @@ class Client
             };
         });
         $this->setupHttpClient();
+
+        $this->initiateSession();
     }
 
     /**
