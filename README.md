@@ -19,6 +19,69 @@ By default, the client will look for credentials in environment variables:
 - BULLHORN_USERNAME
 - BULLHORN_PASSWORD
 
+### Options
+The client constructor accepts an option array.
+```php
+use jonathanraftery\Bullhorn\Rest\Auth\CredentialsProvider\MemoryCredentialsProvider;
+use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
+use jonathanraftery\Bullhorn\Rest\ClientOptions;
+
+$client = new BullhornClient([
+    // NOTE: MemoryCredentialProvider not recommended for production
+    ClientOptions::CredentialsProvider => new MemoryCredentialsProvider(
+        'clientId', 'clientSecret', 'username', 'password'
+    ),
+]);
+```
+The ClientOptions class can be used to view the available options.
+
+### Credential Providers
+A credential provider supplies the client with the credentials needed to
+connect to the API. There are simple providers included, or you can
+create your own with a class implementing the CredentialsProviderInterface
+(for example, to fetch credentials from Google Cloud Secret Manager).
+```php
+use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
+use jonathanraftery\Bullhorn\Rest\ClientOptions;
+use jonathanraftery\Bullhorn\Rest\Auth\CredentialsProvider\CredentialsProviderInterface;
+
+class CustomCredentialProvider implements CredentialsProviderInterface {
+    public function getClientId() : string{ return 'id'; }
+    public function getClientSecret() : string{ return 'secret'; }
+    public function getUsername() : string{ return 'username'; }
+    public function getPassword() : string{ return 'password'; }
+}
+
+$client = new BullhornClient([
+    ClientOptions::CredentialsProvider => new CustomCredentialProvider()
+]);
+```
+
+### Auth Data Stores
+API session data needs persisted in a data store. By default, the client
+will use a local JSON file for this store, but custom stores can be used.
+```php
+use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
+use jonathanraftery\Bullhorn\Rest\ClientOptions;
+use jonathanraftery\Bullhorn\Rest\Auth\Store\DataStoreInterface;
+
+class CustomDataStore implements DataStoreInterface {
+    private $vars;
+
+    public function get(string $key) : ?string{
+        return $this->vars[$key];
+    }
+
+    public function store(string $key,$value){
+        $this->vars[$key] = $value;
+    }
+}
+
+$client = new BullhornClient([
+    ClientOptions::AuthDataStore => new CustomDataStore()
+]);
+```
+
 ### Initial OAuth consent
 Before Bullhorn authorizes API calls from a new user, the user is required to give consent. If no consent has been given yet the library will throw an IdentityException and the client will respond with an HTML representation of the consent form.
 
