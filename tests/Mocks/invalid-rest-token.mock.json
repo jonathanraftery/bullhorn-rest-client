@@ -1,0 +1,5 @@
+{
+  "errorMessage": "Bad 'BhRestToken' or timed-out.",
+  "errorMessageKey": "errors.authentication.invalidRestToken",
+  "errorCode": 401
+}

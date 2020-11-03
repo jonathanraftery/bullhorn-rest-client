@@ -60,7 +60,7 @@ class AuthClient implements AuthClientInterface {
 
         $this->dataStore = array_key_exists(AuthClientOptions::DataStore, $options)
             ? $options[AuthClientOptions::DataStore]
-            :new LocalFileDataStore()
+            : new LocalFileDataStore()
         ;
         if (!$this->dataStore instanceof DataStoreInterface) {
             throw new InvalidConfigException(AuthClientOptions::DataStore . ' must implement ' . DataStoreInterface::class);

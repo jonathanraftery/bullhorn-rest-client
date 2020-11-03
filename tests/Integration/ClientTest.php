@@ -13,8 +13,8 @@ use jonathanraftery\Bullhorn\Rest\EventTypes;
 use jonathanraftery\Bullhorn\Rest\Exception\BullhornClientException;
 use jonathanraftery\Bullhorn\Rest\Exception\HttpException;
 use jonathanraftery\Bullhorn\Rest\Exception\InvalidConfigException;
+use jonathanraftery\Bullhorn\Rest\Exception\InvalidTokenException;
 use jonathanraftery\Bullhorn\Rest\Tests\Mocks\InvalidTokenAuthClient;
-use jonathanraftery\Bullhorn\Rest\Tests\Mocks\MockAuthClient;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -56,7 +56,7 @@ final class ClientTest extends TestCase {
      */
     function test_itFetchesEntities() {
         $result = $this->client->fetchEntities(BullhornEntities::JobOrder, [1,2,3], [
-            'fields' => '*',
+            'fields' => 'id',
         ]);
         $this->assertGreaterThan(0, count($result));
     }
@@ -112,8 +112,7 @@ final class ClientTest extends TestCase {
      * @throws InvalidRefreshTokenException
      * @throws RestLoginException|InvalidConfigException
      */
-    function test_itTrowsExceptionOnInvalidRefreshToken()
-    {
+    function test_itTrowsExceptionOnInvalidRefreshToken() {
         $dataStore = new MemoryDataStore();
         $client = new Client([
             ClientOptions::AuthDataStore => $dataStore
@@ -125,50 +124,56 @@ final class ClientTest extends TestCase {
         $client->refreshSession();
     }
 
-//    /**
-//     * @throws BullhornAuthException
-//     * @throws HttpException
-//     * @throws InvalidConfigException
-//     * @throws \jonathanraftery\Bullhorn\Rest\Auth\Exception\InvalidConfigException
-//     */
-//    function test_onInvalidTokenUsed_itThrowsInvalidTokenException() {
-//        $client = new Client([
-//            ClientOptions::AuthClient => new InvalidTokenAuthClient([
-//                AuthClientOptions::DataStore => new MemoryDataStore(),
-//            ]),
-//        ]);
-//        $client->initiateSession();
-//        $res = $client->fetchEntities(BullhornEntities::Candidate, [1,2,3], ['fields' => '*']);
-//        print_r($res);
-//    }
+    /**
+     * @throws BullhornAuthException
+     * @throws HttpException
+     * @throws InvalidConfigException
+     * @throws \jonathanraftery\Bullhorn\Rest\Auth\Exception\InvalidConfigException
+     */
+    function test_onInvalidTokenUsed_itThrowsInvalidTokenException() {
+        $client = new Client([
+            ClientOptions::AuthClient => new InvalidTokenAuthClient([
+                AuthClientOptions::DataStore => new MemoryDataStore(),
+            ]),
+            ClientOptions::AutoRefreshSessions => false,
+        ]);
+        $client->initiateSession();
+        $this->expectException(InvalidTokenException::class);
+        $client->rawRequest('GET', 'entity/Candidate', [
+            'query' => [
+                'fields' => 'id',
+            ],
+        ]);
+    }
 
-//    /**
-//     * @group slow
-//     * @throws InvalidConfigException
-//     * @throws BullhornAuthException
-//     * @throws HttpException
-//     */
-//    function test_onExpiredTokenUsed_itThrowsInvalidRestTokenException()
-//    {
-//        $client = new Client([
-//            ClientOptions::AuthDataStore => new MemoryDataStore(),
-//            ClientOptions::AutoRefreshSessions => false,
-//        ]);
-//        $client->initiateSession(['ttl' => 1]);
-//        sleep(70);
-////        $this->expectException(ExpiredTokenException::class);
-//        $client->fetchEntities(BullhornEntities::Candidate, [1]);
-//    }
-//
-//    /**
-//     * @group slow
-//     * @throws BullhornAuthException
-//     * @throws BullhornClientException
-//     */
-//    function testRefreshesSessionIfExpirationDetected()
-//    {
-//        $this->client->initiateSession(['ttl' => 1]);
-//        sleep(70);
-//        $this->client->fetchEntities(BullhornEntities::Candidate, [1,2,3]);
-//    }
+    /**
+     * @group slow
+     * @throws InvalidConfigException
+     * @throws BullhornAuthException
+     * @throws HttpException
+     */
+    function test_onExpiredTokenUsed_itThrowsInvalidTokenException() {
+        $client = new Client([
+            ClientOptions::AuthDataStore => new MemoryDataStore(),
+            ClientOptions::AutoRefreshSessions => false,
+        ]);
+        $client->initiateSession(['ttl' => 1]);
+        sleep(61);
+        $this->expectException(InvalidTokenException::class);
+        $client->fetchEntities(BullhornEntities::Candidate, [1]);
+    }
+
+    /**
+     * @group slow
+     * @throws BullhornAuthException
+     * @throws BullhornClientException
+     */
+    function test_itRefreshesSessionIfInvalidTokenDetected() {
+        $this->client->initiateSession(['ttl' => 1]);
+        sleep(61);
+        $result = $this->client->fetchEntities(BullhornEntities::CorporateUser, [1], [
+            'fields' => 'id',
+        ]);
+        $this->assertEquals(1, $result->id);
+    }
 }

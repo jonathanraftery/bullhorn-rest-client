@@ -2,17 +2,23 @@
 
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Handler\CurlHandler;
 use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Psr7\Response;
+use GuzzleHttp\Psr7\Uri;
 use InvalidArgumentException;
 use GuzzleHttp\Client as GuzzleClient;
 use jonathanraftery\Bullhorn\Rest\Auth\AuthClient;
 use jonathanraftery\Bullhorn\Rest\Auth\AuthClientInterface;
 use jonathanraftery\Bullhorn\Rest\Auth\AuthClientOptions;
 use jonathanraftery\Bullhorn\Rest\Auth\Exception\InvalidRefreshTokenException;
-use jonathanraftery\Bullhorn\Rest\Auth\Store\LocalFileDataStore;
 use jonathanraftery\Bullhorn\Rest\Exception\HttpException;
 use jonathanraftery\Bullhorn\Rest\Exception\InvalidConfigException;
+use jonathanraftery\Bullhorn\Rest\Exception\InvalidTokenException;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
 /**
@@ -24,6 +30,7 @@ class Client
     /** @var AuthClientInterface */ protected $authClient;
     /** @var GuzzleClient */ protected $httpClient;
     /** @var callable  */ protected $httpClientFactory;
+    /** @var HandlerStack */ protected $httpHandlerStack;
     protected $shouldAutoRefreshSessions;
     protected $maxSessionRefreshTries;
 
@@ -64,11 +71,42 @@ class Client
         }
         $this->httpClientFactory = array_key_exists(ClientOptions::HttpClientFactory, $options)
             ? $options[ClientOptions::HttpClientFactory]
-            : function ($httpOptions) {return new GuzzleClient($httpOptions);};
-        $this->setupHttpClient();
+            : function ($httpOptions) {return new GuzzleClient($httpOptions);}
+        ;
 
         $this->shouldAutoRefreshSessions = $options[ClientOptions::AutoRefreshSessions] ?? true;
         $this->maxSessionRefreshTries = $options[ClientOptions::MaxSessionRefreshTries] ?? 5;
+
+        // add error handling and session refresh middleware to HTTP handler
+        $this->httpHandlerStack = HandlerStack::create(new CurlHandler());
+        $this->httpHandlerStack->push(function (callable $handler) {
+            return function (RequestInterface $request, array $options) use ($handler) {
+                return $handler($request, $options)->then(
+                    function (ResponseInterface $response) use ($handler, $request, $options) {
+                        if ($response->getStatusCode() === 401) {
+                            $body = json_decode($response->getBody()->getContents());
+                            if ($body->errorMessageKey === 'errors.authentication.invalidRestToken') {
+                                if ($this->shouldAutoRefreshSessions) {
+                                    $requestPath = str_replace($this->authClient->getRestUrl(), '', $request->getUri());
+                                    $this->refreshOrInitiateSession();
+                                    $refreshedRequest = $request
+                                        ->withHeader('BhRestToken', $this->authClient->getRestToken())
+                                        ->withUri(new Uri($this->authClient->getRestUrl() . $requestPath))
+                                    ;
+                                    return $handler($refreshedRequest, $options);
+                                }
+                                else {
+                                    throw new InvalidTokenException();
+                                }
+                            }
+                            $response->getBody()->rewind();
+                        }
+                        return $response;
+                    }
+                );
+            };
+        });
+        $this->setupHttpClient();
     }
 
     /**
@@ -79,6 +117,7 @@ class Client
      */
     protected function setupHttpClient() {
         $this->httpClient = call_user_func($this->httpClientFactory, [
+            'handler' => $this->httpHandlerStack,
             'base_uri' => $this->authClient->getRestUrl(),
             'headers' => [
                 'BhRestToken' => $this->authClient->getRestToken(),
@@ -151,12 +190,12 @@ class Client
      * @throws HttpException
      */
     public function rawRequest(string $method, string $url, $options = []) {
-        try {
+//        try {
             return $this->httpClient->request($method, $url, $options);
-        }
-        catch (GuzzleException $e) {
-            throw new HttpException($e);
-        }
+//        }
+//        catch (GuzzleException $e) {
+//            throw new HttpException($e);
+//        }
     }
 
     /**
@@ -205,16 +244,16 @@ class Client
      * @throws HttpException
      */
     public function fetchEntities(string $entityType, array $entityIds, array $params = []) {
-//        try {
+        try {
             $joinedIds = implode(',', $entityIds);
             $response = $this->httpClient->get("entity/{$entityType}/{$joinedIds}", [
                 'query' => $params
             ]);
             return json_decode($response->getBody()->getContents())->data;
-//        }
-//        catch (GuzzleException $e) {
-//            throw new HttpException($e);
-//        }
+        }
+        catch (GuzzleException $e) {
+            throw new HttpException($e);
+        }
     }
 
     /**
