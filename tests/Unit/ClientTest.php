@@ -46,6 +46,11 @@ final class ClientTest extends TestCase {
         ]);
     }
 
+    function test_itProvidesCurrentSessionData() {
+        $this->assertNotNull($this->client->getRestToken());
+        $this->assertNotNull($this->client->getRestUrl());
+    }
+
     /**
      * @throws InvalidConfigException
      * @throws \jonathanraftery\Bullhorn\Rest\Auth\Exception\InvalidConfigException|BullhornAuthException

@@ -181,6 +181,22 @@ class Client
     }
 
     /**
+     * Gets the current REST token
+     * @return string|null
+     */
+    function getRestToken(): ?string {
+        return $this->authClient->getRestToken();
+    }
+
+    /**
+     * Gets the current REST URL
+     * @return string|null
+     */
+    function getRestUrl(): ?string {
+        return $this->authClient->getRestUrl();
+    }
+
+    /**
      * Makes a raw request to the API
      * @param string $method
      * @param string $url
