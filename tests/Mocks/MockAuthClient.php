@@ -8,7 +8,7 @@ class MockAuthClient implements AuthClientInterface {
     const REFRESH_TOKEN = 'mock-refresh-token';
 
     function getRestToken(): ?string {
-        return self::REFRESH_TOKEN;
+        return self::REST_TOKEN;
     }
 
     function getRestUrl(): ?string {

@@ -47,8 +47,8 @@ final class ClientTest extends TestCase {
     }
 
     function test_itProvidesCurrentSessionData() {
-        $this->assertNotNull($this->client->getRestToken());
-        $this->assertNotNull($this->client->getRestUrl());
+        $this->assertEquals(MockAuthClient::REST_TOKEN, $this->client->getRestToken());
+        $this->assertEquals(MockAuthClient::REST_URL, $this->client->getRestUrl());
     }
 
     /**
