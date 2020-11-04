@@ -57,6 +57,11 @@ $client = new BullhornClient([
 ]);
 ```
 
+By default, the client will use an EnvironmentCredentialsProvider, which will
+look in the environment variables listed above for credentials. The variables
+used can be changed by constructing an EnvironmentCredentialsProvider with
+the other variables.
+
 ### Auth Data Stores
 API session data needs persisted in a data store. By default, the client
 will use a local JSON file for this store, but custom stores can be used.
