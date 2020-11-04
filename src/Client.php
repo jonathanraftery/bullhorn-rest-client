@@ -2,12 +2,8 @@
 
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Handler\CurlHandler;
 use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Middleware;
-use GuzzleHttp\Psr7\Request;
-use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\Uri;
 use InvalidArgumentException;
 use GuzzleHttp\Client as GuzzleClient;
@@ -216,7 +212,7 @@ class Client
     }
 
     /**
-     * Delets an entity
+     * Deletes an entity
      * @param string $entityType
      * @param int $entityId
      * @return mixed
