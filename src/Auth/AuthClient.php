@@ -27,7 +27,6 @@ use League\OAuth2\Client\Token\AccessTokenInterface;
 use Psr\Http\Message\ResponseInterface;
 
 /**
- * Class AuthClient
  * Creates and persists sessions with the Bullhorn REST API
  * @package jonathanraftery\Bullhorn\Rest\Authentication
  */
@@ -35,14 +34,14 @@ class AuthClient implements AuthClientInterface {
     const AUTH_URL  = 'https://auth.bullhornstaffing.com/oauth/authorize';
     const TOKEN_URL = 'https://auth.bullhornstaffing.com/oauth/token';
     const LOGIN_URL = 'https://rest.bullhornstaffing.com/rest-services/login';
-    const REST_TOKEN_STORE_KEY = '{{clientId}}-rest-token';
-    const REST_URL_STORE_KEY = '{{clientId}}-rest-url';
-    const REFRESH_TOKEN_STORE_KEY = '{{clientId}}-refresh-token';
 
     /** @var CredentialsProviderInterface */ protected $credentialsProvider;
     /** @var DataStoreInterface */ protected $dataStore;
     /** @var GuzzleClientInterface */ protected $httpClient;
     /** @var OAuth2Provider */ protected $oauthProvider;
+    protected $restTokenStorageKey = '{{clientId}}-rest-token';
+    protected $restUrlStorageKey = '{{clientId}}-rest-url';
+    protected $refreshTokenStorageKey = '{{clientId}}-refresh-token';
 
     /**
      * AuthClient constructor.
@@ -56,6 +55,16 @@ class AuthClient implements AuthClientInterface {
         ;
         if (!$this->credentialsProvider instanceof CredentialsProviderInterface) {
             throw new InvalidConfigException(AuthClientOptions::CredentialsProvider . ' must implement '. CredentialsProviderInterface::class);
+        }
+
+        if (array_key_exists(AuthClientOptions::RestTokenStorageKey, $options)) {
+            $this->restTokenStorageKey = $options[AuthClientOptions::RestTokenStorageKey];
+        }
+        if (array_key_exists(AuthClientOptions::RestUrlStorageKey, $options)) {
+            $this->restUrlStorageKey = $options[AuthClientOptions::RestUrlStorageKey];
+        }
+        if (array_key_exists(AuthClientOptions::RefreshTokenStorageKey, $options)) {
+            $this->refreshTokenStorageKey = $options[AuthClientOptions::RefreshTokenStorageKey];
         }
 
         $this->dataStore = array_key_exists(AuthClientOptions::DataStore, $options)
@@ -100,15 +109,15 @@ class AuthClient implements AuthClientInterface {
     }
 
     private function getRestTokenKey(): string {
-        return str_replace('{{clientId}}', $this->credentialsProvider->getClientId(), self::REST_TOKEN_STORE_KEY);
+        return str_replace('{{clientId}}', $this->credentialsProvider->getClientId(), $this->restTokenStorageKey);
     }
 
     private function getRestUrlKey(): string {
-        return str_replace('{{clientId}}', $this->credentialsProvider->getClientId(), self::REST_URL_STORE_KEY);
+        return str_replace('{{clientId}}', $this->credentialsProvider->getClientId(), $this->restUrlStorageKey);
     }
 
     private function getRefreshTokenKey(): string {
-        return str_replace('{{clientId}}', $this->credentialsProvider->getClientId(), self::REFRESH_TOKEN_STORE_KEY);
+        return str_replace('{{clientId}}', $this->credentialsProvider->getClientId(), $this->refreshTokenStorageKey);
     }
 
     /**
