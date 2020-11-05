@@ -16,6 +16,7 @@ use jonathanraftery\Bullhorn\Rest\Exception\InvalidConfigException;
 use jonathanraftery\Bullhorn\Rest\Exception\InvalidTokenException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use function PHPUnit\Framework\arrayHasKey;
 
 /**
  * Client for the Bullhorn REST API
@@ -55,6 +56,15 @@ class Client
         }
         if (array_key_exists(ClientOptions::AuthDataStore, $options)) {
             $authClientOptions[AuthClientOptions::DataStore] = $options[ClientOptions::AuthDataStore];
+        }
+        if (array_key_exists(ClientOptions::RestTokenStorageKey, $options)) {
+            $authClientOptions[AuthClientOptions::RestTokenStorageKey] = $options[ClientOptions::RestTokenStorageKey];
+        }
+        if (array_key_exists(ClientOptions::RestUrlStorageKey, $options)) {
+            $authClientOptions[AuthClientOptions::RestUrlStorageKey] = $options[ClientOptions::RestUrlStorageKey];
+        }
+        if (array_key_exists(ClientOptions::RefreshTokenStorageKey, $options)) {
+            $authClientOptions[AuthClientOptions::RefreshTokenStorageKey] = $options[ClientOptions::RefreshTokenStorageKey];
         }
         $this->authClient = array_key_exists(ClientOptions::AuthClient, $options)
             ? $options[ClientOptions::AuthClient]
