@@ -5,5 +5,6 @@ interface AuthClientInterface {
     function getRestUrl(): ?string;
     function getRefreshToken(): ?string;
     function initiateSession();
-
+    function refreshSession();
+    function sessionIsValid(): bool;
 }

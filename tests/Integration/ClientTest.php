@@ -1,10 +1,12 @@
 <?php namespace jonathanraftery\Bullhorn\Rest\Tests\Integration;
 
+use GuzzleHttp\Exception\GuzzleException;
 use jonathanraftery\Bullhorn\Rest\Auth\AuthClientOptions;
 use jonathanraftery\Bullhorn\Rest\Auth\Exception\BullhornAuthException;
 use jonathanraftery\Bullhorn\Rest\Auth\Exception\CreateSessionException;
 use jonathanraftery\Bullhorn\Rest\Auth\Exception\InvalidRefreshTokenException;
 use jonathanraftery\Bullhorn\Rest\Auth\Exception\RestLoginException;
+use jonathanraftery\Bullhorn\Rest\Auth\Store\DataStoreInterface;
 use jonathanraftery\Bullhorn\Rest\Auth\Store\MemoryDataStore;
 use jonathanraftery\Bullhorn\Rest\BullhornEntities;
 use jonathanraftery\Bullhorn\Rest\Client;
@@ -27,7 +29,13 @@ use PHPUnit\Framework\TestCase;
  * @group rest
  */
 final class ClientTest extends TestCase {
-    /** @var Client */ protected $client;
+    /** @var Client */ private $client;
+    /** @var DataStoreInterface */ private $sessionDataStore;
+
+    public function __construct(?string $name = null, array $data = [], $dataName = '') {
+        parent::__construct($name, $data, $dataName);
+        $this->sessionDataStore = new MemoryDataStore();
+    }
 
     /**
      * @throws BullhornAuthException
@@ -36,9 +44,38 @@ final class ClientTest extends TestCase {
     protected function setUp(): void {
         parent::setUp();
         $this->client = new Client([
-            ClientOptions::AuthDataStore => new MemoryDataStore(),
+            ClientOptions::AuthDataStore => $this->sessionDataStore,
         ]);
-        $this->client->initiateSession();
+    }
+
+    /**
+     * @throws BullhornAuthException
+     * @throws InvalidConfigException
+     * @throws GuzzleException
+     * @throws \jonathanraftery\Bullhorn\Rest\Auth\Exception\InvalidConfigException
+     */
+    function test_itInitiatesSessionOnFirstRequestIfNotAlreadyInitiated() {
+        $client = new Client([
+            ClientOptions::AuthDataStore => new MemoryDataStore(), // start with empty session store
+        ]);
+        $client->rawRequest('GET', 'entity/CorporateUser/1', [
+            'query' => ['fields' => 'id'],
+        ]);
+        $this->assertTrue(true); // just make sure no exception was thrown
+    }
+
+    function test_itUsesExistingSessionIfDataStoreContainsIt() {
+        $sharedDataStore = new MemoryDataStore();
+        $client1 = new Client([ClientOptions::AuthDataStore => $sharedDataStore]);
+        $client1->initiateSession();
+        $restUrl = $client1->getRestUrl();
+        $restToken = $client1->getRestToken();
+        $client2 = new Client([ClientOptions::AuthDataStore => $sharedDataStore]);
+        $client2->rawRequest('GET', 'entity/CorporateUser/1', [
+            'query' => ['fields' => 'id'],
+        ]);
+        $this->assertEquals($restUrl, $client2->getRestUrl());
+        $this->assertEquals($restToken, $client2->getRestToken());
     }
 
     /**

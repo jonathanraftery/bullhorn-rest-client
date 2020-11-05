@@ -132,6 +132,9 @@ class AuthClient implements AuthClientInterface {
      */
     public function refreshSession(array $options = []) {
         $refreshToken = $this->dataStore->get($this->getRefreshTokenKey());
+        if (!$refreshToken) {
+            throw new InvalidRefreshTokenException();
+        }
         $accessToken = $this->refreshAccessToken($refreshToken);
         $session = $this->createSession($accessToken, $options);
         $this->storeSession($session);
@@ -141,7 +144,7 @@ class AuthClient implements AuthClientInterface {
      * Returns if the current REST sessions is valid
      * @return bool
      */
-    public function sessionIsValid() {
+    public function sessionIsValid(): bool {
         return (
             !empty($this->getRestToken())
             && !empty($this->getRestUrl())

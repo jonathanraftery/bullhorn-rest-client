@@ -3,21 +3,39 @@
 use jonathanraftery\Bullhorn\Rest\Auth\AuthClientInterface;
 
 class MockAuthClient implements AuthClientInterface {
-    const REST_TOKEN = 'mock-rest-token';
-    const REST_URL = 'https://bullhorn.com/rest/mock';
-    const REFRESH_TOKEN = 'mock-refresh-token';
+    const REST_TOKEN = 'mock-rest-token-{{session-count}}';
+    const REST_URL = 'https://bullhorn.com/rest/mock-{{session-count}}';
+    const REFRESH_TOKEN = 'mock-refresh-token-{{session-count}}';
+
+    protected $sessionsInitiated = 0;
 
     function getRestToken(): ?string {
-        return self::REST_TOKEN;
+        return $this->sessionsInitiated > 0
+            ? str_replace('{{session-count}}', $this->sessionsInitiated, self::REST_TOKEN)
+            : null;
     }
 
     function getRestUrl(): ?string {
-        return self::REST_URL;
+        return $this->sessionsInitiated > 0
+            ? str_replace('{{session-count}}', $this->sessionsInitiated, self::REST_URL)
+            :null;
     }
 
     function getRefreshToken(): ?string {
-        return self::REFRESH_TOKEN;
+        return $this->sessionsInitiated > 0
+            ? str_replace('{{session-count}}', $this->sessionsInitiated, self::REFRESH_TOKEN)
+            : null;
     }
 
-    function initiateSession() { }
+    function initiateSession() {
+        ++$this->sessionsInitiated;
+    }
+
+    function refreshSession() {
+        ++$this->sessionsInitiated;
+    }
+
+    function sessionIsValid(): bool {
+        return $this->sessionsInitiated > 0;
+    }
 }

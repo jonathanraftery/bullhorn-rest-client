@@ -1,5 +1,6 @@
 <?php namespace jonathanraftery\Bullhorn\Rest\Tests\Unit;
 
+use GuzzleHttp\Handler\CurlHandler;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
@@ -47,8 +48,9 @@ final class ClientTest extends TestCase {
     }
 
     function test_itProvidesCurrentSessionData() {
-        $this->assertEquals(MockAuthClient::REST_TOKEN, $this->client->getRestToken());
-        $this->assertEquals(MockAuthClient::REST_URL, $this->client->getRestUrl());
+        $this->client->initiateSession();
+        $this->assertEquals((str_replace('{{session-count}}', '1', MockAuthClient::REST_TOKEN)), $this->client->getRestToken());
+        $this->assertEquals((str_replace('{{session-count}}', '1', MockAuthClient::REST_URL)), $this->client->getRestUrl());
     }
 
     /**

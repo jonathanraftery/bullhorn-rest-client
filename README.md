@@ -11,6 +11,7 @@ $ composer require jonathanraftery/bullhorn-rest-client
 ```php
 use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
 $client = new BullhornClient();
+$client->initiateSession();
 ```
 
 By default, the client will look for credentials in environment variables:
@@ -97,6 +98,7 @@ Simple requests as documented in the Bullhorn API documentation can be run as:
 ```php
 use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
 $client = new BullhornClient();
+$client->initiateSession();
 $response = $client->rawRequest(
     'GET',
     'search/JobOrder',
@@ -113,6 +115,7 @@ To set the body of a PUT/POST request, set the "body" option of the request to t
 ```php
 use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
 $client = new BullhornClient();
+$client->initiateSession();
 $response = $client->rawRequest(
     'PUT',
     'entity/Candidate',
@@ -128,6 +131,7 @@ Entities can be fetched, created, and deleted
 use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
 use jonathanraftery\Bullhorn\Rest\BullhornEntities;
 $client = new BullhornClient();
+$client->initiateSession();
 $fetchedJobOrders = $client->fetchEntities(BullhornEntities::JobOrder, [1,2,3], [
     'fields' => 'id',
 ]);
@@ -145,6 +149,7 @@ use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
 use jonathanraftery\Bullhorn\Rest\BullhornEntities;
 use jonathanraftery\Bullhorn\Rest\EventTypes;
 $client = new BullhornClient();
+$client->initiateSession();
 $client->createEventSubscription('SubscriptionName', [BullhornEntities::JobOrder], [EventTypes::Created]);
 $client->fetchEventSubscriptionEvents('SubscriptionName');
 $client->deleteEventSubscription('SubscriptionName');
@@ -155,5 +160,6 @@ Session will automatically refresh if expiration detected, or can be refreshed m
 ```php
 use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
 $client = new BullhornClient();
+$client->initiateSession();
 $client->refreshSession(['ttl' => 60]);
 ```

@@ -74,8 +74,35 @@ class Client
         $this->shouldAutoRefreshSessions = $options[ClientOptions::AutoRefreshSessions] ?? true;
         $this->maxSessionRefreshTries = $options[ClientOptions::MaxSessionRefreshTries] ?? 5;
 
-        // add error handling and session refresh middleware to HTTP handler
+        $this->setupHttpHandlerStack();
+        $this->setupHttpClient();
+    }
+
+    /**
+     * Sets up middleware for HTTP requests
+     */
+    protected function setupHttpHandlerStack() {
         $this->httpHandlerStack = HandlerStack::create(new CurlHandler());
+
+        // adds session initialization if requests made when no session is active
+        $this->httpHandlerStack->push(function (callable $handler) {
+            return function (RequestInterface $request, array $options) use ($handler) {
+                if ($this->sessionIsValid()) {
+                    return $handler($request, $options);
+                }
+                else {
+                    $this->refreshOrInitiateSession();
+                    $requestPath = str_replace($this->authClient->getRestUrl(), '', $request->getUri());
+                    $refreshedRequest = $request
+                        ->withHeader('BhRestToken', $this->authClient->getRestToken())
+                        ->withUri(new Uri($this->authClient->getRestUrl() . $requestPath))
+                    ;
+                    return $handler($refreshedRequest, $options);
+                }
+            };
+        });
+
+        // adds error handling and session refresh middleware to HTTP handler
         $this->httpHandlerStack->push(function (callable $handler) {
             return function (RequestInterface $request, array $options) use ($handler) {
                 return $handler($request, $options)->then(
@@ -103,9 +130,6 @@ class Client
                 );
             };
         });
-        $this->setupHttpClient();
-
-        $this->initiateSession();
     }
 
     /**
