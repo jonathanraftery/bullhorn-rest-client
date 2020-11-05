@@ -154,14 +154,14 @@ $client->deleteEventSubscription('SubscriptionName');
 A session will automatically be initiated upon the first request if no
 session exists in the data store.
 
-A session can be manually initiated with
+A session can be manually initiated with:
 ```php
 use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
 $client = new BullhornClient();
 $client->initiateSession();
 ```
 
-The wession will automatically refresh if expiration detected, or can be refreshed manually (shown with optional parameters)
+The session will automatically refresh if expiration detected, or can be refreshed manually (shown with optional parameters)
 ```php
 use jonathanraftery\Bullhorn\Rest\Client as BullhornClient;
 $client = new BullhornClient();
