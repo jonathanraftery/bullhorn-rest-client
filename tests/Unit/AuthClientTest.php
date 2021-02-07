@@ -135,7 +135,7 @@ final class AuthClientTest extends TestCase {
     /**
      * @throws BullhornAuthException
      */
-    function testThrowsExceptionOnInvalidRefreshToken()
+    function test_itThrowsExceptionOnInvalidRefreshToken()
     {
         $this->setupMockSuccessfulOauth();
         $this->authClient->initiateSession();
@@ -145,5 +145,12 @@ final class AuthClientTest extends TestCase {
         ]);
         $this->expectException(InvalidRefreshTokenException::class);
         $this->authClient->refreshSession();
+    }
+
+    function test_itAutomatesOauthUserConsent() {
+        $this->setupMockHttp([
+            new Response(200, [], file_get_contents(__DIR__ . '/../Mocks/auth/need-user-consent.mock.html')),
+        ]);
+        $this->authClient->initiateSession();
     }
 }

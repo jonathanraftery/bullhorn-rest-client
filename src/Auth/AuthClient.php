@@ -282,7 +282,44 @@ class AuthClient implements AuthClientInterface {
 
             $locationHeader = $response->getHeader('Location')[0];
             if (!$locationHeader) {
-                throw new BullhornAuthException('Failed to fetch authorization code');
+                // if user consent page was returned, accept and retry
+                if (strpos($responseBody, 'Get Consent')) {
+                    preg_match('/name="corporationId".* /', $responseBody, $corpIdMatches);
+                    preg_match('/name="masterUserId".* /', $responseBody, $userIdMatches);
+                    if (count($corpIdMatches) < 1 || count($userIdMatches) <1) {
+                        throw new BullhornAuthException('Failed to fetch authorization code');
+                    }
+
+                    $corpIdParts = preg_split('/value=/', $corpIdMatches[0]);
+                    $userIdParts = preg_split('/value=/', $userIdMatches[0]);
+                    if (count($corpIdParts) < 2 || count($userIdParts) < 2) {
+                        throw new BullhornAuthException('Failed to fetch authorization code');
+                    }
+
+                    $corpId = str_replace('"', '', $corpIdParts[1]);
+                    $userId = str_replace('"', '', $userIdParts[1]);
+
+                    $this->httpClient->post(self::AUTH_URL, [
+                        'body' => http_build_query([
+                            'corporationId' => $corpId,
+                            'masterUserId' => $userId,
+                            'expiresAt' => '0',
+                            'action' => 'Agree',
+                        ]),
+                        'query' => [
+                            'client_id' => $this->credentialsProvider->getClientId(),
+                            'client_secret' => $this->credentialsProvider->getClientSecret(),
+                            'response_type' => OauthResponseTypes::AuthorizationCode,
+                            'username' => $this->credentialsProvider->getUsername(),
+                            'password' => $this->credentialsProvider->getPassword(),
+                        ],
+                    ]);
+
+                    return $this->fetchAuthorizationCode();
+                }
+                else {
+                    throw new BullhornAuthException('Failed to fetch authorization code');
+                }
             }
 
             $authCode = preg_split("/code=/", $locationHeader);

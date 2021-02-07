@@ -1,0 +1,45 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Bullhorn OAuth - Get Consent</title>
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="apple-touch-fullscreen" content="yes">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+    <link rel='stylesheet' type='text/css' href='css/login.css'/>
+    <link rel='localizations' type='text/json' href='l10n/localizations.json' />
+    <script type="text/javascript" src="js/json2.js"></script>
+    <script type="text/javascript" src="js/l10n.js"></script>
+    <script type="text/javascript">
+        String.toLocaleString("l10n/localizations.json");
+    </script>
+</head>
+<body onLoad="onLoaded()">
+<div class="consent">
+    <header>
+        <h1 id="logo">BULLHORN</h1>
+        <h3 id="title">Get Consent</h3>
+    </header>
+    <form method="POST" name="consentForm">
+        <h1>Client Name - 1234</h1>
+        <h2 id="tos" >Terms of Service</h2>
+        <p>N/A</p>
+        <input type="hidden" name="corporationId" value="1234" />
+        <input type="hidden" name="masterUserId" value="1234567" />
+        <input type="hidden" name="expiresAt" value="0" />
+        <input id="agreebtn" type="submit" name="action" value="Agree">
+        <input id="declinebtn" type="submit" name="action" value="Decline">
+    </form>
+    <footer></footer>
+</div>
+<script type="text/javascript">
+    function onLoaded(){
+        document.getElementById('tos').innerHTML = "Terms of Service".localize();
+        document.getElementById('title').innerHTML = "Get Consent".localize();
+        document.getElementById('agreebtn').value = "Agree".localize();
+        document.getElementById('declinebtn').value = "Decline".localize();
+    }
+</script>
+</body>
+</html>
