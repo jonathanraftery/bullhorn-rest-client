@@ -28,7 +28,7 @@
     "test:auth:integration": "phpunit --testsuite integration --group auth"
   },
   "require": {
-    "php": "^7.3",
+    "php": "^7.3|^8.0",
     "league/oauth2-client": "^2.5",
     "guzzlehttp/guzzle": "^7.2",
     "ext-json": "*"
