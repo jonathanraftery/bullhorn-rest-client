@@ -119,7 +119,9 @@ class Client
                     function (ResponseInterface $response) use ($handler, $request, $options) {
                         if ($response->getStatusCode() === 401) {
                             $body = json_decode($response->getBody()->getContents());
-                            if ($body->errorMessageKey === 'errors.authentication.invalidRestToken') {
+                            if (((strpos($body->message, "Bad") !== false) &&
+                                    (strpos($body->message, "BhRestToken") !== false))
+                                || (isset($body->errorMessageKey) && $body->errorMessageKey === 'errors.authentication.invalidRestToken')) {
                                 if ($this->shouldAutoRefreshSessions) {
                                     $requestPath = str_replace($this->authClient->getRestUrl(), '', $request->getUri());
                                     $this->refreshOrInitiateSession();
