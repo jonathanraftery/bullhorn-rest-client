@@ -296,7 +296,7 @@ class AuthClient implements AuthClientInterface {
         }
         catch (GuzzleException $e) {
             $errorMessage = $e->getMessage();
-            throw new BullhornAuthException("Failed to fetch authorization code (HTTP error: ${errorMessage})");
+            throw new BullhornAuthException("Failed to fetch authorization code (HTTP error: ". $errorMessage .")");
         }
     }
 }
