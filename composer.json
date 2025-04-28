@@ -1,6 +1,6 @@
 {
   "name": "jonathanraftery/bullhorn-rest-client",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Simple REST client for the Bullhorn API, including automated OAuth2 login",
   "keywords": [
     "bullhorn",
