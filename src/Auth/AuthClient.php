@@ -83,17 +83,34 @@ class AuthClient implements AuthClientInterface {
             throw new InvalidConfigException(AuthClientOptions::HttpClient . ' must be a ' . GuzzleClient::class);
         }
 
+        $baseAuthUrl = $this->getAuthBaseUrl();
         $this->oauthProvider = new OAuth2Provider(
             [
                 'clientId' => $this->credentialsProvider->getClientId(),
                 'clientSecret' => $this->credentialsProvider->getClientSecret(),
-                'urlAuthorize' => static::AUTH_URL,
-                'urlAccessToken' => static::TOKEN_URL,
+                'urlAuthorize' => $baseAuthUrl ? $baseAuthUrl . '/authorize' : static::AUTH_URL,
+                'urlAccessToken' => $baseAuthUrl ? $baseAuthUrl . '/token' : static::TOKEN_URL,
                 'urlResourceOwnerDetails' => null,
             ], [
                 'httpClient' => $this->httpClient,
             ]
         );
+    }
+
+    public function getAuthBaseUrl(): ?string {
+        if($this->credentialsProvider->getUsername()) {
+            $client = new GuzzleClient();
+            $response = $client->request('GET', 'https://rest.bullhornstaffing.com/rest-services/loginInfo?username={API_Username}', [
+                'query' => [
+                    'username' => $this->credentialsProvider->getUsername(),
+                ],
+            ]);
+            $urls = json_decode($response->getBody()->getContents(), TRUE);
+            if(!empty($urls['oauthUrl'])) {
+                return $urls['oauthUrl'];
+            }
+        }
+        return null;
     }
 
     public function getRestToken(): ?string {
@@ -296,7 +313,7 @@ class AuthClient implements AuthClientInterface {
         }
         catch (GuzzleException $e) {
             $errorMessage = $e->getMessage();
-            throw new BullhornAuthException("Failed to fetch authorization code (HTTP error: ${errorMessage})");
+            throw new BullhornAuthException("Failed to fetch authorization code (HTTP error: $errorMessage)");
         }
     }
 }
